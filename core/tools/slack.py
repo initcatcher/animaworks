@@ -886,6 +886,20 @@ def get_tool_schemas() -> list[dict]:
 # CLI entry point
 # ============================================================
 
+
+def get_cli_guide() -> str:
+    """Return CLI usage guide for Slack tools."""
+    return """\
+### Slack
+```bash
+animaworks-tool slack channels -j
+animaworks-tool slack messages <チャンネル名またはID> -j
+animaworks-tool slack send <チャンネル名またはID> "メッセージ本文"
+animaworks-tool slack search "キーワード" -j
+animaworks-tool slack unreplied -j
+```"""
+
+
 def cli_main(argv: list[str] | None = None) -> None:
     """Standalone CLI entry point for the Slack tool."""
     parser = argparse.ArgumentParser(

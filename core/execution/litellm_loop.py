@@ -29,9 +29,9 @@ from core.prompt_builder import build_system_prompt, inject_shortterm
 from core.schemas import ModelConfig
 from core.shortterm_memory import SessionState, ShortTermMemory
 from core.tool_handler import ToolHandler
+from core.tool_guide import load_tool_schemas
 from core.tool_schemas import (
     build_tool_list,
-    load_external_schemas,
     to_litellm_format,
 )
 
@@ -52,11 +52,13 @@ class LiteLLMExecutor(BaseExecutor):
         tool_handler: ToolHandler,
         tool_registry: list[str],
         memory: MemoryManager,
+        personal_tools: dict[str, str] | None = None,
     ) -> None:
         super().__init__(model_config, person_dir)
         self._tool_handler = tool_handler
         self._tool_registry = tool_registry
         self._memory = memory
+        self._personal_tools = personal_tools or {}
 
     def _build_tools(self) -> list[dict[str, Any]]:
         """Build the LiteLLM-format tool list."""
@@ -64,7 +66,7 @@ class LiteLLMExecutor(BaseExecutor):
             self._tool_handler.delegate_fn is not None
             and self._model_config.role == "commander"
         )
-        external = load_external_schemas(self._tool_registry)
+        external = load_tool_schemas(self._tool_registry, self._personal_tools)
         canonical = build_tool_list(
             include_file_tools=True,
             include_delegate=has_delegate,
@@ -158,7 +160,12 @@ class LiteLLMExecutor(BaseExecutor):
                     )
                     tracker.reset()
                     system_prompt = inject_shortterm(
-                        build_system_prompt(self._memory), shortterm
+                        build_system_prompt(
+                            self._memory,
+                            tool_registry=self._tool_registry,
+                            personal_tools=self._personal_tools,
+                        ),
+                        shortterm,
                     )
                     messages = [
                         {"role": "system", "content": system_prompt},

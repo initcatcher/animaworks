@@ -86,9 +86,8 @@
 
 1. キャラクター設計ガイドの「アバター画像の生成」セクションに従う
 2. identity.md の外見設定を NovelAI 互換のアニメタグに変換する
-3. `generate_character_assets` ツールを呼び出す（`person_dir` に新社員のディレクトリを指定）
-4. 全4ステップ（fullbody → bustup → chibi → 3d）を実行
-5. 失敗したステップがあればエラーを記録し、成功分だけ使用する
+3. `generate_character_assets` ツールを呼び出す（`person_dir` に新社員のディレクトリを指定、`steps` は指定しない＝全6ステップ実行）
+4. 失敗したステップがあればエラーを記録し、成功分だけ使用する
 
 `image_gen` が使用不可の場合、このステップをスキップする。
 

@@ -547,6 +547,20 @@ def get_tool_schemas() -> list[dict]:
 # CLI entry point
 # ============================================================
 
+
+def get_cli_guide() -> str:
+    """Return CLI usage guide for Chatwork tools."""
+    return """\
+### Chatwork
+```bash
+animaworks-tool chatwork rooms -j
+animaworks-tool chatwork messages <ルーム名またはID> -j
+animaworks-tool chatwork send <ルーム名またはID> "メッセージ本文"
+animaworks-tool chatwork search "キーワード" -j
+animaworks-tool chatwork unreplied -j
+```"""
+
+
 def cli_main(argv: list[str] | None = None) -> None:
     """Standalone CLI entry point for the Chatwork tool."""
     parser = argparse.ArgumentParser(

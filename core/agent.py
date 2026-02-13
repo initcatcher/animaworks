@@ -17,6 +17,7 @@ execution is delegated to engines in ``core.execution``, tool dispatch to
 
 import asyncio
 import logging
+import re
 import time
 from collections.abc import AsyncGenerator
 from datetime import datetime
@@ -56,6 +57,7 @@ class AgentCore:
         self.model_config = model_config or ModelConfig()
         self.messenger = messenger
         self._tool_registry = self._init_tool_registry()
+        self._personal_tools = self._discover_personal_tools()
         self._sdk_available = self._check_sdk()
         self._agent_lock = asyncio.Lock()
 
@@ -65,6 +67,7 @@ class AgentCore:
             memory=memory,
             messenger=messenger,
             tool_registry=self._tool_registry,
+            personal_tools=self._personal_tools,
         )
         self._executor = self._create_executor()
 
@@ -120,20 +123,41 @@ class AgentCore:
             )
             return False
 
+    # Matches permission lines like "- image_gen: yes", "* web_search: OK"
+    _PERMISSION_RE = re.compile(
+        r"[-*]?\s*(\w+)\s*:\s*(OK|yes|enabled|true)\s*$",
+        re.IGNORECASE,
+    )
+
     def _init_tool_registry(self) -> list[str]:
-        """Initialize tool registry with tools allowed in permissions.md."""
+        """Initialize tool registry with tools allowed in permissions.md.
+
+        Parses the ``外部ツール`` section and accepts common affirmative
+        values: ``OK``, ``yes``, ``enabled``, ``true`` (case-insensitive).
+        """
         try:
             from core.tools import TOOL_MODULES
             permissions = self.memory.read_permissions() if self.memory else ""
+            if "外部ツール" not in permissions:
+                return []
             allowed = []
-            if "外部ツール" in permissions:
-                for tool_name in TOOL_MODULES:
-                    if f"{tool_name}: OK" in permissions:
-                        allowed.append(tool_name)
+            for line in permissions.splitlines():
+                m = self._PERMISSION_RE.match(line.strip())
+                if m and m.group(1) in TOOL_MODULES:
+                    allowed.append(m.group(1))
             return allowed
         except Exception:
             logger.debug("Tool registry initialization skipped")
             return []
+
+    def _discover_personal_tools(self) -> dict[str, str]:
+        """Discover personal tool modules in ``{person_dir}/tools/``."""
+        try:
+            from core.tools import discover_personal_tools
+            return discover_personal_tools(self.person_dir)
+        except Exception:
+            logger.debug("Personal tools discovery skipped", exc_info=True)
+            return {}
 
     def _create_executor(self):
         """Factory: create the appropriate executor for the resolved mode."""
@@ -156,6 +180,7 @@ class AgentCore:
                 tool_handler=self._tool_handler,
                 tool_registry=self._tool_registry,
                 memory=self.memory,
+                personal_tools=self._personal_tools,
             )
         # mode == "b"
         return AssistedExecutor(
@@ -221,7 +246,7 @@ class AgentCore:
         )
 
         # Build system prompt; inject short-term memory from prior session
-        system_prompt = build_system_prompt(self.memory)
+        system_prompt = build_system_prompt(self.memory, tool_registry=self._tool_registry, personal_tools=self._personal_tools)
         logger.debug("System prompt assembled, length=%d", len(system_prompt))
         if shortterm.has_pending():
             system_prompt = inject_shortterm(system_prompt, shortterm)
@@ -291,7 +316,7 @@ class AgentCore:
 
             tracker.reset()
             system_prompt_2 = inject_shortterm(
-                build_system_prompt(self.memory),
+                build_system_prompt(self.memory, tool_registry=self._tool_registry, personal_tools=self._personal_tools),
                 shortterm,
             )
             continuation_prompt = load_prompt("session_continuation")
@@ -368,7 +393,7 @@ class AgentCore:
             threshold=self.model_config.context_threshold,
         )
 
-        system_prompt = build_system_prompt(self.memory)
+        system_prompt = build_system_prompt(self.memory, tool_registry=self._tool_registry, personal_tools=self._personal_tools)
         if shortterm.has_pending():
             system_prompt = inject_shortterm(system_prompt, shortterm)
 
@@ -420,7 +445,7 @@ class AgentCore:
 
             tracker.reset()
             system_prompt_2 = inject_shortterm(
-                build_system_prompt(self.memory),
+                build_system_prompt(self.memory, tool_registry=self._tool_registry, personal_tools=self._personal_tools),
                 shortterm,
             )
             continuation_prompt = load_prompt("session_continuation")

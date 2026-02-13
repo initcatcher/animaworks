@@ -364,6 +364,21 @@ def get_tool_schemas() -> list[dict[str, Any]]:
 # CLI entry point
 # ──────────────────────────────────────────────────────────────────────────────
 
+
+def get_cli_guide() -> str:
+    """Return CLI usage guide for GitHub tools."""
+    return """\
+### GitHub
+```bash
+animaworks-tool github issues -j
+animaworks-tool github issues --repo owner/repo -j
+animaworks-tool github issue 123 -j
+animaworks-tool github create-issue --title "タイトル" --body "本文"
+animaworks-tool github prs -j
+animaworks-tool github create-pr --title "タイトル" --body "本文" --head ブランチ名
+```"""
+
+
 def cli_main(argv: list[str] | None = None) -> None:
     """Standalone CLI for GitHub operations.
 

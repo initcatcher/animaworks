@@ -147,7 +147,27 @@ def _interactive_person_setup(data_dir) -> None:
     persons_dir.mkdir(parents=True, exist_ok=True)
 
     templates = list_person_templates()
-    template_list = ", ".join(templates) if templates else "none"
+
+    # テンプレートがない場合: 名前から直接作成
+    if not templates:
+        print()
+        name = input(
+            "最初のDigital Personの名前（英小文字、空欄でスキップ）: "
+        ).strip()
+        if not name:
+            print("パーソンの作成をスキップしました。")
+            return
+        err = validate_person_name(name)
+        if err:
+            print(f"Error: {err}")
+            return
+        person_dir = create_blank(persons_dir, name)
+        _register_person_in_config(data_dir, person_dir.name, role="commander")
+        print(f"\n{person_dir.name} を作成しました（commander）。")
+        return
+
+    # テンプレートがある場合: メニュー表示
+    template_list = ", ".join(templates)
 
     print()
     print("最初のDigital Personをどのように作成しますか？")
@@ -159,15 +179,8 @@ def _interactive_person_setup(data_dir) -> None:
     choice = input("\n選択 [1]: ").strip() or "1"
 
     if choice == "1":
-        if not templates:
-            print("テンプレートが見つかりません。ブランクで作成します。")
-            choice = "3"
-        elif len(templates) == 1:
+        if len(templates) == 1:
             tpl = templates[0]
-            person_dir = create_from_template(persons_dir, tpl)
-            _register_person_in_config(data_dir, person_dir.name, role="commander")
-            print(f"\n{person_dir.name} を作成しました（commander）。")
-            return
         else:
             print(f"\n利用可能なテンプレート:")
             for i, t in enumerate(templates, 1):
@@ -177,10 +190,10 @@ def _interactive_person_setup(data_dir) -> None:
                 tpl = templates[int(idx) - 1]
             except (ValueError, IndexError):
                 tpl = templates[0]
-            person_dir = create_from_template(persons_dir, tpl)
-            _register_person_in_config(data_dir, person_dir.name, role="commander")
-            print(f"\n{person_dir.name} を作成しました（commander）。")
-            return
+        person_dir = create_from_template(persons_dir, tpl)
+        _register_person_in_config(data_dir, person_dir.name, role="commander")
+        print(f"\n{person_dir.name} を作成しました（commander）。")
+        return
 
     if choice == "2":
         md_path_str = input("MDファイルのパス: ").strip()

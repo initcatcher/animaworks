@@ -625,7 +625,7 @@ def create_router() -> APIRouter:
 
         return result
 
-    @api.get("/persons/{name}/assets/{filename}")
+    @api.api_route("/persons/{name}/assets/{filename}", methods=["GET", "HEAD"])
     async def get_asset(name: str, filename: str, request: Request):
         """Serve a static asset file from a person's assets directory."""
         person = request.app.state.persons.get(name)

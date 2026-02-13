@@ -461,6 +461,18 @@ def get_tool_schemas() -> list[dict]:
 # CLI entry point
 # ---------------------------------------------------------------------------
 
+
+def get_cli_guide() -> str:
+    """Return CLI usage guide for Gmail tools."""
+    return """\
+### Gmail
+```bash
+animaworks-tool gmail unread -j
+animaworks-tool gmail read <メッセージID>
+animaworks-tool gmail draft --to "宛先" --subject "件名" --body "本文"
+```"""
+
+
 def cli_main(argv: list[str] | None = None) -> None:
     """Standalone CLI for Gmail operations."""
     parser = argparse.ArgumentParser(

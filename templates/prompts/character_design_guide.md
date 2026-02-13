@@ -89,10 +89,13 @@ lowres, bad anatomy, bad hands, missing fingers, extra digits, fewer digits, cro
 1. `generate_character_assets` ツールを呼び出す
    - `prompt`: 上記ルールで変換したアニメタグ
    - `negative_prompt`: 推奨ネガティブプロンプト
-   - 全4ステップ（fullbody → bustup → chibi → 3d）を実行
+   - `steps` は**指定しない**（デフォルトで全6ステップが実行される）
 2. 生成結果は `assets/` ディレクトリに保存される:
    - `avatar_fullbody.png` — 全身立ち絵（NovelAI V4.5）
    - `avatar_bustup.png` — バストアップ（Flux Kontext）
    - `avatar_chibi.png` — ちびキャラ（Flux Kontext）
    - `avatar_chibi.glb` — 3Dモデル（Meshy Image-to-3D）
+   - `avatar_chibi_rigged.glb` — リグ付き3Dモデル（Meshy Rigging）
+   - `anim_walking.glb`, `anim_running.glb` — 基本アニメーション（リギング同梱）
+   - `anim_idle.glb`, `anim_sitting.glb`, `anim_waving.glb`, `anim_talking.glb` — 追加アニメーション（Meshy Animations）
 3. 生成に失敗したステップがあればエラーを記録し、成功したものだけ使用する

@@ -377,6 +377,18 @@ def get_tool_schemas() -> list[dict[str, Any]]:
 # CLI entry point
 # ──────────────────────────────────────────────────────────────────────────────
 
+
+def get_cli_guide() -> str:
+    """Return CLI usage guide for AWS monitoring tools."""
+    return """\
+### AWS モニタリング
+```bash
+animaworks-tool aws_collector ecs-status --cluster <クラスタ> --service <サービス> -j
+animaworks-tool aws_collector error-logs --log-group <ロググループ> --hours 2 -j
+animaworks-tool aws_collector metrics --cluster <クラスタ> --service <サービス> --metric CPUUtilization -j
+```"""
+
+
 def cli_main(argv: list[str] | None = None) -> None:
     """Standalone CLI for AWS data collection.
 

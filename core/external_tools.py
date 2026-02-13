@@ -26,18 +26,40 @@ class ExternalToolDispatcher:
     """Dispatch tool calls to external tool modules.
 
     External tools are loaded dynamically from ``core.tools`` based on the
-    ``tool_registry`` (allowed tools from permissions.md).
+    ``tool_registry`` (allowed tools from permissions.md).  Personal tools
+    from ``{person_dir}/tools/`` are also supported.
     """
 
-    def __init__(self, tool_registry: list[str]) -> None:
+    def __init__(
+        self,
+        tool_registry: list[str],
+        personal_tools: dict[str, str] | None = None,
+    ) -> None:
         self._registry = tool_registry
+        self._personal_tools = personal_tools or {}
 
     def dispatch(self, name: str, args: dict[str, Any]) -> str | None:
         """Execute an external tool by schema name.
 
+        Checks core tools first, then personal tools.
+
         Returns:
             Result string on success, or ``None`` if no matching tool found.
         """
+        # Try core tools
+        result = self._dispatch_core(name, args)
+        if result is not None:
+            return result
+
+        # Try personal tools
+        result = self._dispatch_personal(name, args)
+        if result is not None:
+            return result
+
+        return None
+
+    def _dispatch_core(self, name: str, args: dict[str, Any]) -> str | None:
+        """Dispatch to core tool modules."""
         if not self._registry:
             return None
 
@@ -62,6 +84,55 @@ class ExternalToolDispatcher:
             except Exception as e:
                 logger.warning("External tool %s failed: %s", name, e)
                 return f"Error executing {name}: {e}"
+
+        return None
+
+    def _dispatch_personal(self, name: str, args: dict[str, Any]) -> str | None:
+        """Dispatch to personal tool modules.
+
+        Personal tools must expose a ``dispatch(name, args)`` function.
+        Falls back to calling a function whose name matches the schema name.
+        """
+        if not self._personal_tools:
+            return None
+
+        import importlib.util
+
+        for tool_name, file_path in self._personal_tools.items():
+            try:
+                spec = importlib.util.spec_from_file_location(
+                    f"animaworks_personal_tool_{tool_name}", file_path,
+                )
+                if spec is None or spec.loader is None:
+                    continue
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)  # type: ignore[union-attr]
+
+                # Check if this module owns the schema
+                schemas = mod.get_tool_schemas() if hasattr(mod, "get_tool_schemas") else []
+                schema_names = [s["name"] for s in schemas]
+                if name not in schema_names:
+                    continue
+
+                # Preferred: module-level dispatch function
+                if hasattr(mod, "dispatch"):
+                    result = mod.dispatch(name, args)
+                # Fallback: function matching schema name
+                elif hasattr(mod, name):
+                    result = getattr(mod, name)(**args)
+                else:
+                    logger.warning(
+                        "Personal tool %s has schema '%s' but no dispatch or matching function",
+                        tool_name, name,
+                    )
+                    return f"Error: personal tool '{tool_name}' has no handler for '{name}'"
+
+                if isinstance(result, (dict, list)):
+                    return json.dumps(result, ensure_ascii=False, indent=2, default=str)
+                return str(result) if result is not None else "(no output)"
+            except Exception as e:
+                logger.warning("Personal tool %s (%s) failed: %s", tool_name, name, e)
+                return f"Error executing personal tool {name}: {e}"
 
         return None
 

@@ -442,6 +442,18 @@ def get_tool_schemas() -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
+def get_cli_guide() -> str:
+    """Return CLI usage guide for local LLM tools."""
+    return """\
+### ローカルLLM (Ollama)
+```bash
+animaworks-tool local_llm generate "プロンプト"
+animaworks-tool local_llm chat '{"messages":[{"role":"user","content":"質問"}]}'
+animaworks-tool local_llm list -j
+animaworks-tool local_llm status -j
+```"""
+
+
 def cli_main(argv: list[str] | None = None) -> None:
     """Standalone CLI for local LLM operations."""
     parser = argparse.ArgumentParser(

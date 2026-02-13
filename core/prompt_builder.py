@@ -42,7 +42,11 @@ def _build_messaging_section(person_dir: Path, other_persons: list[str]) -> str:
     )
 
 
-def build_system_prompt(memory: MemoryManager) -> str:
+def build_system_prompt(
+    memory: MemoryManager,
+    tool_registry: list[str] | None = None,
+    personal_tools: dict[str, str] | None = None,
+) -> str:
     """Construct the full system prompt from Markdown files.
 
     System prompt =
@@ -144,13 +148,12 @@ def build_system_prompt(memory: MemoryManager) -> str:
             f"| スキル名 | 概要 |\n|---------|------|\n{common_skill_lines}"
         )
 
-    # Inject external tools guide if permissions mention external tools
-    if permissions and "外部ツール" in permissions:
-        try:
-            tools_guide = load_prompt("tools_guide")
+    # Inject dynamically generated external tools guide (filtered by registry)
+    if permissions and "外部ツール" in permissions and (tool_registry or personal_tools):
+        from core.tool_guide import build_tools_guide
+        tools_guide = build_tools_guide(tool_registry or [], personal_tools)
+        if tools_guide:
             parts.append(tools_guide)
-        except Exception:
-            logger.debug("tools_guide.md not found, skipping external tools injection")
 
     parts.append(load_prompt("behavior_rules"))
 

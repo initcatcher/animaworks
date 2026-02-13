@@ -52,13 +52,17 @@ class ToolHandler:
         memory: MemoryManager,
         messenger: Messenger | None = None,
         tool_registry: list[str] | None = None,
+        personal_tools: dict[str, str] | None = None,
         delegate_fn: DelegateFn | None = None,
     ) -> None:
         self._person_dir = person_dir
         self._memory = memory
         self._messenger = messenger
         self._delegate_fn = delegate_fn
-        self._external = ExternalToolDispatcher(tool_registry or [])
+        self._external = ExternalToolDispatcher(
+            tool_registry or [],
+            personal_tools=personal_tools,
+        )
 
     # ── Delegate callback property ───────────────────────────
 

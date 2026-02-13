@@ -1095,6 +1095,24 @@ def get_tool_schemas() -> list[dict]:
 # ── CLI entry point ────────────────────────────────────────
 
 
+def get_cli_guide() -> str:
+    """Return CLI usage guide for image generation tools."""
+    return """\
+### 画像・3Dモデル生成 (image_gen)
+```bash
+# 全6ステップ一括生成（推奨）
+animaworks-tool image_gen pipeline "1girl, black hair, ..." --negative "lowres, bad anatomy, ..." --person-dir <person_dir> -j
+
+# 個別ステップ
+animaworks-tool image_gen fullbody "prompt" --person-dir <person_dir> -j
+animaworks-tool image_gen bustup --person-dir <person_dir> -j
+animaworks-tool image_gen chibi --person-dir <person_dir> -j
+animaworks-tool image_gen 3d --person-dir <person_dir> -j
+animaworks-tool image_gen rigging <model.glb> -o <output_dir> -j
+animaworks-tool image_gen animations <model.glb> -o <output_dir> -j
+```"""
+
+
 def cli_main(argv: list[str] | None = None) -> None:
     """CLI entry point for ``animaworks-tool image_gen``."""
     parser = argparse.ArgumentParser(
