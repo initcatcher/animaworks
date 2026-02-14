@@ -22,7 +22,7 @@ import logging
 import os
 import re
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from core.schemas import ModelConfig

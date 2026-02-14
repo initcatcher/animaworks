@@ -3,12 +3,19 @@ from __future__ import annotations
 # Copyright (C) 2026 AnimaWorks Authors
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""Tests for RAG (Retrieval-Augmented Generation) subsystem."""
+"""Tests for RAG (Retrieval-Augmented Generation) subsystem.
+
+These tests require ChromaDB and sentence-transformers.
+Install with: pip install 'animaworks[rag]'
+"""
 
 import pytest
 from pathlib import Path
 import tempfile
 import shutil
+
+# Skip all tests in this module if ChromaDB is not available
+chromadb = pytest.importorskip("chromadb", reason="ChromaDB not installed. Install with: pip install 'animaworks[rag]'")
 
 # ── Fixtures ────────────────────────────────────────────────────────
 

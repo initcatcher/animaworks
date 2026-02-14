@@ -23,6 +23,15 @@ from tests.helpers.filesystem import (
 # main.py calls load_dotenv() for CLI usage; tests need it here.
 load_dotenv()
 
+# ── Optional dependency detection ────────────────────────
+
+# Check if ChromaDB is available
+try:
+    import chromadb
+    CHROMADB_AVAILABLE = True
+except ImportError:
+    CHROMADB_AVAILABLE = False
+
 
 # ── CLI options ───────────────────────────────────────────
 

@@ -268,6 +268,13 @@ class KnowledgeGraph:
             logger.debug("PageRank computed for %d nodes", len(scores))
             return scores
 
+        except ImportError as e:
+            logger.error(
+                "PageRank computation failed: missing dependency (numpy required). "
+                "Install with: pip install 'animaworks[rag]'"
+            )
+            logger.debug("Original error: %s", e)
+            return {}
         except Exception as e:
             logger.error("PageRank computation failed: %s", e)
             return {}
