@@ -74,10 +74,9 @@ class AgentCore:
 
         mode = self._resolve_execution_mode()
         logger.info(
-            "AgentCore: model=%s, mode=%s, role=%s, api_key=%s, base_url=%s",
+            "AgentCore: model=%s, mode=%s, api_key=%s, base_url=%s",
             self.model_config.model,
             mode,
-            self.model_config.role or "(none)",
             "direct" if self.model_config.api_key else f"env:{self.model_config.api_key_env}",
             self.model_config.api_base_url or "(default)",
         )

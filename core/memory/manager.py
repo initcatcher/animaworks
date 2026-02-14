@@ -105,7 +105,6 @@ class MemoryManager:
                 max_chains=resolved.max_chains,
                 conversation_history_threshold=resolved.conversation_history_threshold,
                 execution_mode=resolved.execution_mode,
-                role=resolved.role,
                 supervisor=resolved.supervisor,
                 speciality=resolved.speciality,
                 resolved_mode=mode,
