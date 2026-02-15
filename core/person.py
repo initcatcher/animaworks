@@ -115,7 +115,7 @@ class DigitalPerson:
         # Notify human via configured channels
         if self.agent.has_human_notifier:
             try:
-                notifier = self.agent._tool_handler._human_notifier
+                notifier = self.agent.human_notifier
                 if notifier:
                     await notifier.notify(
                         subject=f"バックグラウンドタスク完了: {task.tool_name}",

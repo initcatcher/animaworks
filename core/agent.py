@@ -143,6 +143,11 @@ class AgentCore:
         """True if this agent has a configured human notifier."""
         return self._tool_handler._human_notifier is not None
 
+    @property
+    def human_notifier(self):
+        """Return the human notifier instance (or None)."""
+        return self._tool_handler._human_notifier
+
     # ── Background task management ────────────────────────────
 
     def _build_background_manager(self) -> BackgroundTaskManager | None:

@@ -14,6 +14,7 @@ It owns permission checks, memory/file/command operations, and delegates
 external tool calls to ``ExternalToolDispatcher``.
 """
 
+import json as _json
 import logging
 import re
 import shlex
@@ -166,7 +167,6 @@ class ToolHandler:
             task_id = self._background_manager.submit(
                 name, ext_args, self._external.dispatch,
             )
-            import json as _json
             return _json.dumps({
                 "status": "background",
                 "task_id": task_id,

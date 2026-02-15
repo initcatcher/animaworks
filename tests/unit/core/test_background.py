@@ -435,3 +435,183 @@ class TestDefaultEligibleTools:
         assert _DEFAULT_ELIGIBLE_TOOLS["image_generation"] == 30
         assert _DEFAULT_ELIGIBLE_TOOLS["local_llm"] == 60
         assert _DEFAULT_ELIGIBLE_TOOLS["run_command"] == 60
+
+
+# ── SubmitAsync ─────────────────────────────────────────────
+
+
+class TestSubmitAsync:
+    async def test_submit_async_creates_task(
+        self, manager: BackgroundTaskManager,
+    ):
+        """submit_async() returns a task_id and the task status is RUNNING."""
+        async def execute_fn(name: str, args: dict) -> str:
+            await asyncio.sleep(5)
+            return "async done"
+
+        task_id = await manager.submit_async(
+            "image_generation", {"prompt": "cat"}, execute_fn,
+        )
+
+        assert isinstance(task_id, str)
+        assert len(task_id) == 12
+
+        task = manager.get_task(task_id)
+        assert task is not None
+        assert task.status == TaskStatus.RUNNING
+        assert task.tool_name == "image_generation"
+        assert task.tool_args == {"prompt": "cat"}
+        assert task.person_name == "test-person"
+
+        # Cancel the long-running task to avoid warnings
+        async_task = manager._async_tasks.get(task_id)
+        if async_task:
+            async_task.cancel()
+            try:
+                await async_task
+            except asyncio.CancelledError:
+                pass
+
+    async def test_submit_async_completes_successfully(
+        self, manager: BackgroundTaskManager,
+    ):
+        """submit_async with a succeeding async execute_fn transitions to COMPLETED."""
+        async def execute_fn(name: str, args: dict) -> str:
+            return "async result"
+
+        task_id = await manager.submit_async(
+            "image_generation", {"prompt": "dog"}, execute_fn,
+        )
+
+        # Wait for the background asyncio.Task to finish
+        async_task = manager._async_tasks.get(task_id)
+        assert async_task is not None
+        await async_task
+
+        task = manager.get_task(task_id)
+        assert task is not None
+        assert task.status == TaskStatus.COMPLETED
+        assert task.result == "async result"
+        assert task.completed_at is not None
+        assert task.error is None
+
+    async def test_submit_async_fails_on_exception(
+        self, manager: BackgroundTaskManager,
+    ):
+        """submit_async with a failing async execute_fn sets FAILED status."""
+        async def execute_fn(name: str, args: dict) -> str:
+            raise RuntimeError("async kaboom")
+
+        task_id = await manager.submit_async(
+            "run_command", {"cmd": "fail"}, execute_fn,
+        )
+
+        async_task = manager._async_tasks.get(task_id)
+        assert async_task is not None
+        await async_task
+
+        task = manager.get_task(task_id)
+        assert task is not None
+        assert task.status == TaskStatus.FAILED
+        assert "RuntimeError" in task.error
+        assert "async kaboom" in task.error
+        assert task.completed_at is not None
+        assert task.result is None
+
+    async def test_submit_async_on_complete_callback_called(
+        self, manager: BackgroundTaskManager,
+    ):
+        """Verify the on_complete callback fires after async task completion."""
+        callback = AsyncMock()
+        manager.on_complete = callback
+
+        async def execute_fn(name: str, args: dict) -> str:
+            return "callback test"
+
+        task_id = await manager.submit_async(
+            "local_llm", {"q": "hello"}, execute_fn,
+        )
+        async_task = manager._async_tasks.get(task_id)
+        await async_task
+
+        callback.assert_called_once()
+        called_task = callback.call_args[0][0]
+        assert called_task.task_id == task_id
+        assert called_task.status == TaskStatus.COMPLETED
+
+
+# ── LoadTask error handling ─────────────────────────────────
+
+
+class TestLoadTaskErrors:
+    def test_load_task_handles_corrupt_json(
+        self, manager: BackgroundTaskManager, person_dir: Path,
+    ):
+        """get_task returns None when the task file contains invalid JSON."""
+        storage_dir = person_dir / "state" / "background_tasks"
+        storage_dir.mkdir(parents=True, exist_ok=True)
+
+        # Write corrupt (non-parseable) JSON
+        (storage_dir / "corrupt001.json").write_text(
+            "{{not valid json!!", encoding="utf-8",
+        )
+
+        assert manager.get_task("corrupt001") is None
+
+    def test_load_task_handles_missing_keys(
+        self, manager: BackgroundTaskManager, person_dir: Path,
+    ):
+        """get_task returns None when required keys are missing from JSON."""
+        storage_dir = person_dir / "state" / "background_tasks"
+        storage_dir.mkdir(parents=True, exist_ok=True)
+
+        # Valid JSON but missing required keys (e.g. task_id, person_name)
+        (storage_dir / "badkeys001.json").write_text(
+            json.dumps({"some_field": "value"}), encoding="utf-8",
+        )
+
+        assert manager.get_task("badkeys001") is None
+
+    def test_load_task_handles_invalid_status(
+        self, manager: BackgroundTaskManager, person_dir: Path,
+    ):
+        """get_task returns None when status value is not a valid TaskStatus."""
+        storage_dir = person_dir / "state" / "background_tasks"
+        storage_dir.mkdir(parents=True, exist_ok=True)
+
+        bad_data = {
+            "task_id": "badstat001",
+            "person_name": "test-person",
+            "tool_name": "local_llm",
+            "tool_args": {},
+            "status": "invalid_status_value",
+            "created_at": time.time(),
+        }
+        (storage_dir / "badstat001.json").write_text(
+            json.dumps(bad_data), encoding="utf-8",
+        )
+
+        assert manager.get_task("badstat001") is None
+
+
+# ── Cleanup edge cases ──────────────────────────────────────
+
+
+class TestCleanupEdgeCases:
+    def test_cleanup_skips_corrupt_json(
+        self, manager: BackgroundTaskManager, person_dir: Path,
+    ):
+        """cleanup_old_tasks skips files with corrupt JSON gracefully."""
+        storage_dir = person_dir / "state" / "background_tasks"
+        storage_dir.mkdir(parents=True, exist_ok=True)
+
+        # Write a corrupt JSON file
+        (storage_dir / "corrupt_cleanup.json").write_text(
+            "not json at all", encoding="utf-8",
+        )
+
+        # Should not raise, should return 0 removed
+        removed = manager.cleanup_old_tasks(max_age_hours=0)
+        assert removed == 0
+        # The corrupt file should still exist (not deleted)
+        assert (storage_dir / "corrupt_cleanup.json").exists()
