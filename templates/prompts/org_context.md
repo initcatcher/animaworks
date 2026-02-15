@@ -4,4 +4,4 @@
 
 上司: {supervisor_line}
 部下: {subordinates_line}
-同僚: {peers_line}
+同僚（同じ上司を持つメンバー）: {peers_line}
