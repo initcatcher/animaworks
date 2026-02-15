@@ -10,7 +10,7 @@ export function initConfirmStep(panel) {
   panel.innerHTML = `
     <h2 class="step-section-title">${t("confirm.title")}</h2>
     <p class="step-section-desc">${t("confirm.desc")}</p>
-    <div class="card" id="confirmSummary"></div>
+    <div class="confirm-card" id="confirmSummary"></div>
   `;
 }
 
@@ -26,49 +26,49 @@ export function populateConfirm(data) {
   const keyEntries = Object.entries(imageKeys).filter(([, v]) => v);
   const keySummary = keyEntries.length > 0
     ? keyEntries.map(([k, v]) => `
-        <div class="summary-row">
-          <span class="summary-key">${k}</span>
-          <span class="summary-val masked">${maskKey(v)}</span>
+        <div class="confirm-row">
+          <span class="confirm-key">${k}</span>
+          <span class="confirm-value masked">${maskKey(v)}</span>
         </div>
       `).join("")
-    : `<div class="summary-row">
-        <span class="summary-key">${t("confirm.apikeys")}</span>
-        <span class="summary-val">${t("confirm.not_configured")}</span>
+    : `<div class="confirm-row">
+        <span class="confirm-key">${t("confirm.apikeys")}</span>
+        <span class="confirm-value">${t("confirm.not_configured")}</span>
       </div>`;
 
   confirmPanel.innerHTML = `
     <h2 class="step-section-title">${t("confirm.title")}</h2>
     <p class="step-section-desc">${t("confirm.desc")}</p>
 
-    <div class="card">
-      <div class="summary-section">
-        <div class="summary-title">${t("confirm.language")}
+    <div class="confirm-card">
+      <div class="confirm-section">
+        <div class="confirm-section-title">${t("confirm.language")}
           <button class="btn-edit-step" data-step="0">${t("confirm.edit")}</button>
         </div>
-        <div class="summary-row">
-          <span class="summary-key">${t("confirm.language")}</span>
-          <span class="summary-val">${locale === "ja" ? t("lang.ja") : t("lang.en")}</span>
+        <div class="confirm-row">
+          <span class="confirm-key">${t("confirm.language")}</span>
+          <span class="confirm-value">${locale === "ja" ? t("lang.ja") : t("lang.en")}</span>
         </div>
       </div>
 
-      <div class="summary-section">
-        <div class="summary-title">${t("confirm.provider")}
+      <div class="confirm-section">
+        <div class="confirm-section-title">${t("confirm.provider")}
           <button class="btn-edit-step" data-step="1">${t("confirm.edit")}</button>
         </div>
-        <div class="summary-row">
-          <span class="summary-key">${t("confirm.provider")}</span>
-          <span class="summary-val">${t(`env.provider.${provider}`) || provider}</span>
+        <div class="confirm-row">
+          <span class="confirm-key">${t("confirm.provider")}</span>
+          <span class="confirm-value">${t(`env.provider.${provider}`) || provider}</span>
         </div>
         ${keySummary}
       </div>
 
-      <div class="summary-section">
-        <div class="summary-title">${t("confirm.leader")}
+      <div class="confirm-section">
+        <div class="confirm-section-title">${t("confirm.leader")}
           <button class="btn-edit-step" data-step="2">${t("confirm.edit")}</button>
         </div>
-        <div class="summary-row">
-          <span class="summary-key">${t("confirm.leader")}</span>
-          <span class="summary-val">${leaderName}</span>
+        <div class="confirm-row">
+          <span class="confirm-key">${t("confirm.leader")}</span>
+          <span class="confirm-value">${leaderName}</span>
         </div>
       </div>
     </div>
@@ -120,10 +120,10 @@ export async function completeSetup(data) {
 
     // Show success screen
     confirmPanel.innerHTML = `
-      <div class="completion-screen">
-        <div class="completion-icon">\u2705</div>
-        <h2 class="completion-title">${t("confirm.success")}</h2>
-        <p class="completion-desc">${t("confirm.success.desc")}</p>
+      <div class="confirm-success visible">
+        <div class="success-icon">\u2705</div>
+        <h2 class="success-title">${t("confirm.success")}</h2>
+        <p class="success-message">${t("confirm.success.desc")}</p>
       </div>
     `;
 

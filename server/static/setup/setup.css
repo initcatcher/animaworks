@@ -645,6 +645,21 @@ body {
   font-weight: 400;
 }
 
+/* --- Common Step Sections --- */
+.step-section-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.step-section-desc {
+  font-size: 0.88rem;
+  color: #8888aa;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
 /* --- Step 3: Leader Creation --- */
 .leader-name-input {
   margin-top: 20px;

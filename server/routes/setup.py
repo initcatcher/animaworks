@@ -57,17 +57,18 @@ AVAILABLE_LOCALES = [
 
 class ValidateKeyRequest(BaseModel):
     provider: str
-    api_key: str
+    api_key: str = ""
+    ollama_url: str = ""
+
+
+class PersonSetup(BaseModel):
+    name: str
 
 
 class SetupCompleteRequest(BaseModel):
     locale: str = "ja"
     credentials: dict[str, dict[str, str]] = {}
     person: PersonSetup | None = None
-
-
-class PersonSetup(BaseModel):
-    name: str
 
 
 # ── Router factory ─────────────────────────────────────────
