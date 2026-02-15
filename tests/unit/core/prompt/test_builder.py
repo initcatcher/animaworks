@@ -8,7 +8,9 @@ import pytest
 
 from core.prompt.builder import (
     _build_messaging_section,
+    _build_org_context,
     _discover_other_persons,
+    _format_person_entry,
     build_system_prompt,
     inject_shortterm,
 )
@@ -291,6 +293,113 @@ class TestBuildSystemPrompt:
             )
             # A1 mode should call the CLI guide builder
             mock_guide.assert_called_once()
+
+
+# ── _format_person_entry ──────────────────────────────────
+
+
+class TestFormatPersonEntry:
+    def test_with_speciality(self):
+        assert _format_person_entry("alice", "frontend") == "alice (frontend)"
+
+    def test_without_speciality(self):
+        assert _format_person_entry("alice", None) == "alice"
+
+    def test_empty_speciality(self):
+        assert _format_person_entry("alice", "") == "alice"
+
+
+# ── _build_org_context ───────────────────────────────────
+
+
+class TestBuildOrgContext:
+    """Test organisation context derivation from supervisor chain."""
+
+    def test_top_level_person(self, data_dir, make_person):
+        """Top-level person (no supervisor) sees subordinates."""
+        make_person("sakura")
+        make_person("rin", supervisor="sakura", speciality="development")
+        make_person("kotoha", supervisor="sakura", speciality="communication")
+
+        result = _build_org_context("sakura", ["rin", "kotoha"])
+        assert "あなたがトップです" in result
+        assert "rin (development)" in result
+        assert "kotoha (communication)" in result
+
+    def test_middle_manager(self, data_dir, make_person):
+        """Middle manager sees supervisor, subordinates, and peers."""
+        make_person("sakura")
+        make_person("rin", supervisor="sakura", speciality="development")
+        make_person("kotoha", supervisor="sakura", speciality="communication")
+        make_person("alice", supervisor="rin", speciality="frontend")
+
+        result = _build_org_context("rin", ["sakura", "kotoha", "alice"])
+        # Supervisor
+        assert "sakura" in result
+        # Subordinate
+        assert "alice (frontend)" in result
+        # Peer
+        assert "kotoha (communication)" in result
+
+    def test_leaf_worker(self, data_dir, make_person):
+        """Leaf worker sees supervisor and peers but no subordinates."""
+        make_person("sakura")
+        make_person("rin", supervisor="sakura", speciality="development")
+        make_person("alice", supervisor="rin", speciality="frontend")
+        make_person("bob", supervisor="rin", speciality="backend")
+
+        result = _build_org_context("alice", ["sakura", "rin", "bob"])
+        # Supervisor
+        assert "rin (development)" in result
+        # No subordinates
+        assert "部下" in result
+        assert "(なし)" in result
+        # Peer
+        assert "bob (backend)" in result
+
+    def test_solo_person(self, data_dir, make_person):
+        """Solo person with no relationships."""
+        make_person("sakura")
+
+        result = _build_org_context("sakura", [])
+        assert "あなたがトップです" in result
+        # No communication rules when alone
+        assert "コミュニケーションルール" not in result
+
+    def test_communication_rules_injected_when_others_exist(
+        self, data_dir, make_person
+    ):
+        """Communication rules are included when other persons exist."""
+        make_person("sakura")
+        make_person("rin", supervisor="sakura", speciality="development")
+
+        result = _build_org_context("sakura", ["rin"])
+        assert "コミュニケーションルール" in result
+
+    def test_speciality_not_set(self, data_dir, make_person):
+        """Handles persons without speciality gracefully."""
+        make_person("sakura")
+        make_person("rin", supervisor="sakura")
+
+        result = _build_org_context("sakura", ["rin"])
+        # rin should appear without parenthetical speciality
+        assert "rin" in result
+        # person_speciality should show (未設定) for sakura
+        assert "(未設定)" in result
+
+    def test_config_load_failure_returns_empty(self, data_dir):
+        """Returns empty string when config cannot be loaded."""
+        with patch("core.config.load_config", side_effect=RuntimeError):
+            result = _build_org_context("sakura", ["rin"])
+            assert result == ""
+
+    def test_person_not_in_config(self, data_dir, make_person):
+        """Handles gracefully when person_name is not in config.persons."""
+        make_person("rin", supervisor="sakura", speciality="development")
+        # sakura has no entry in config but is referenced as supervisor
+
+        result = _build_org_context("unknown", ["rin"])
+        assert "あなたがトップです" in result
 
 
 # ── inject_shortterm ──────────────────────────────────────

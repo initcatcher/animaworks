@@ -83,6 +83,8 @@ def create_person_dir(
     model: str = "claude-sonnet-4-20250514",
     execution_mode: str | None = None,
     credential: str | None = None,
+    supervisor: str | None = None,
+    speciality: str | None = None,
     api_key: str | None = None,
     api_key_env: str = "ANTHROPIC_API_KEY",
     api_base_url: str | None = None,
@@ -125,6 +127,10 @@ def create_person_dir(
         person_config["execution_mode"] = execution_mode
     if credential is not None:
         person_config["credential"] = credential
+    if supervisor is not None:
+        person_config["supervisor"] = supervisor
+    if speciality is not None:
+        person_config["speciality"] = speciality
     person_config["context_threshold"] = context_threshold
     person_config["max_chains"] = max_chains
     person_config["max_turns"] = max_turns
