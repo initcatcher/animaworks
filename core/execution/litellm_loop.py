@@ -173,12 +173,7 @@ class LiteLLMExecutor(BaseExecutor):
         new_schemas = load_personal_tool_schemas(merged)
         new_litellm = to_litellm_format(new_schemas)
 
-        # Remove old dynamic tool schemas (non-core), then add new ones
-        core_names = set()
-        for cat in self._tool_registry:
-            cat_schemas = load_external_schemas([cat])
-            core_names.update(s["name"] for s in cat_schemas)
-        # Keep core tools + framework tools, replace dynamic tools
+        # Replace old dynamic tool schemas with new ones
         dynamic_names = {
             s["name"] for s in new_schemas
         }

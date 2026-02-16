@@ -1164,3 +1164,18 @@ class TestShareTool:
         assert "already exists" in parsed["message"]
         # Verify original was NOT overwritten
         assert (common_dir / "my_tool.py").read_text(encoding="utf-8") == "print('old')"
+
+    def test_path_traversal_in_tool_name_blocked(
+        self, handler: ToolHandler, person_dir: Path,
+    ):
+        result = handler.handle("share_tool", {"tool_name": "../../identity"})
+        parsed = json.loads(result)
+        assert parsed["error_type"] == "InvalidArguments"
+        assert "valid Python identifier" in parsed["message"]
+
+    def test_slash_in_tool_name_blocked(
+        self, handler: ToolHandler, person_dir: Path,
+    ):
+        result = handler.handle("share_tool", {"tool_name": "foo/bar"})
+        parsed = json.loads(result)
+        assert parsed["error_type"] == "InvalidArguments"

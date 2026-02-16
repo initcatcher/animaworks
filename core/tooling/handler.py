@@ -499,6 +499,15 @@ class ToolHandler:
         from core.paths import get_data_dir
 
         tool_name = args["tool_name"]
+
+        # Sanitise: tool_name must be a valid Python identifier (no path traversal)
+        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", tool_name):
+            return _error_result(
+                "InvalidArguments",
+                f"Invalid tool name '{tool_name}'. Must be a valid Python identifier.",
+                suggestion="Use only letters, digits, and underscores",
+            )
+
         src = self._person_dir / "tools" / f"{tool_name}.py"
         if not src.exists():
             return _error_result(
