@@ -4,6 +4,9 @@
 // into a single reusable function with callback-based UI injection.
 
 import { parseConvSSE, getErrorMessage } from "./sse-parser.js";
+import { createLogger } from "./logger.js";
+
+const logger = createLogger("chat-stream");
 
 /**
  * SSE chat stream processor.
@@ -28,9 +31,8 @@ import { parseConvSSE, getErrorMessage } from "./sse-parser.js";
  */
 export async function streamChat(animaName, body, signal, callbacks) {
   const url = `/api/animas/${encodeURIComponent(animaName)}/chat/stream`;
-  // TODO: Replace console.* with logger.info() when shared/logger.js is available
   const start = performance.now();
-  console.info(`[chat-stream] Stream start: ${animaName}`);
+  logger.info(`Stream start: ${animaName}`);
 
   const headers = body instanceof FormData ? {} : { "Content-Type": "application/json" };
 
@@ -43,8 +45,7 @@ export async function streamChat(animaName, body, signal, callbacks) {
 
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    // TODO: Replace with logger.error() when shared/logger.js is available
-    console.error(`[chat-stream] Stream failed: ${res.status} ${text}`);
+    logger.error(`Stream failed: ${res.status} ${text}`);
     throw new Error(`API ${res.status}: ${text}`);
   }
 
@@ -101,6 +102,5 @@ export async function streamChat(animaName, body, signal, callbacks) {
   }
 
   const elapsed = ((performance.now() - start) / 1000).toFixed(1);
-  // TODO: Replace with logger.info() when shared/logger.js is available
-  console.info(`[chat-stream] Stream complete: ${animaName} (${elapsed}s)`);
+  logger.info(`Stream complete: ${animaName} (${elapsed}s)`);
 }
