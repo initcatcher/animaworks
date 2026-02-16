@@ -36,6 +36,16 @@ logger = logging.getLogger(__name__)
 _MSG_HEARTBEAT_COOLDOWN_S = 60
 _CASCADE_WINDOW_S = 600   # 10 minutes
 _CASCADE_THRESHOLD = 4     # max round-trips per pair within window
+_DEFAULT_KEEPALIVE_INTERVAL = 30  # fallback keep-alive interval in seconds
+
+
+class _Sentinel:
+    """Queue termination marker for keep-alive merge."""
+
+    __slots__ = ()
+
+
+_SENTINEL = _Sentinel()
 
 
 # ── PersonRunner ──────────────────────────────────────────────────
@@ -403,6 +413,10 @@ class PersonRunner:
 
         Yields IPCResponse chunks with stream=True, followed by
         a final response with done=True containing the full result.
+
+        Uses an asyncio.Queue to merge Agent SDK stream chunks and
+        periodic keep-alive chunks so that the IPC layer's per-chunk
+        timeout is reset even during long tool executions.
         """
         if not self.person:
             yield IPCResponse(
@@ -414,6 +428,13 @@ class PersonRunner:
             )
             return
 
+        # ── Resolve keep-alive interval from config ──────────────
+        try:
+            from core.config import load_config
+            keepalive_interval: int = load_config().server.keepalive_interval
+        except Exception:
+            keepalive_interval = _DEFAULT_KEEPALIVE_INTERVAL
+
         message = request.params.get("message", "")
         from_person = request.params.get("from_person", "human")
         full_response = ""
@@ -421,110 +442,201 @@ class PersonRunner:
         # Track bootstrap state to detect completion
         was_bootstrapping = self.person.needs_bootstrap
 
-        try:
-            # Emit bootstrap_start if person needs bootstrap
-            if was_bootstrapping:
-                yield IPCResponse(
-                    id=request.id,
-                    stream=True,
-                    chunk=json.dumps(
-                        {"type": "bootstrap_start"}, ensure_ascii=False,
-                    ),
-                )
+        # ── Queue-based merge of SDK stream + keep-alive ─────────
+        queue: asyncio.Queue[IPCResponse | _Sentinel] = asyncio.Queue()
+        last_chunk_time = time.monotonic()
+        stream_start_time = time.monotonic()
 
-            async for chunk in self.person.process_message_stream(
-                message, from_person=from_person
-            ):
-                event_type = chunk.get("type", "unknown")
+        async def _enqueue(resp: IPCResponse) -> None:
+            """Put response on queue and update last-chunk timestamp."""
+            nonlocal last_chunk_time
+            last_chunk_time = time.monotonic()
+            await queue.put(resp)
 
-                if event_type == "text_delta":
-                    text = chunk.get("text", "")
-                    full_response += text
-                    yield IPCResponse(
+        async def _stream_producer() -> None:
+            """Read Agent SDK stream and enqueue IPCResponse chunks."""
+            nonlocal full_response
+            try:
+                # Emit bootstrap_start if person needs bootstrap
+                if was_bootstrapping:
+                    await _enqueue(IPCResponse(
                         id=request.id,
                         stream=True,
-                        chunk=json.dumps(chunk, ensure_ascii=False)
-                    )
+                        chunk=json.dumps(
+                            {"type": "bootstrap_start"}, ensure_ascii=False,
+                        ),
+                    ))
 
-                elif event_type == "cycle_done":
-                    cycle_result = chunk.get("cycle_result", {})
-                    full_response = cycle_result.get("summary", full_response)
+                async for chunk in self.person.process_message_stream(
+                    message, from_person=from_person
+                ):
+                    event_type = chunk.get("type", "unknown")
 
-                    # Emit bootstrap_complete if bootstrap just finished
-                    if was_bootstrapping and not self.person.needs_bootstrap:
-                        yield IPCResponse(
+                    if event_type == "text_delta":
+                        text = chunk.get("text", "")
+                        full_response += text
+                        await _enqueue(IPCResponse(
+                            id=request.id,
+                            stream=True,
+                            chunk=json.dumps(chunk, ensure_ascii=False),
+                        ))
+
+                    elif event_type == "cycle_done":
+                        cycle_result = chunk.get("cycle_result", {})
+                        full_response = cycle_result.get(
+                            "summary", full_response,
+                        )
+
+                        # Emit bootstrap_complete if bootstrap just finished
+                        if (
+                            was_bootstrapping
+                            and not self.person.needs_bootstrap
+                        ):
+                            await _enqueue(IPCResponse(
+                                id=request.id,
+                                stream=True,
+                                chunk=json.dumps(
+                                    {"type": "bootstrap_complete"},
+                                    ensure_ascii=False,
+                                ),
+                            ))
+
+                        await _enqueue(IPCResponse(
+                            id=request.id,
+                            stream=True,
+                            done=True,
+                            result={
+                                "response": full_response,
+                                "replied_to": [],
+                                "cycle_result": cycle_result,
+                            },
+                        ))
+                        return
+
+                    elif event_type == "bootstrap_busy":
+                        # Person is already bootstrapping — forward as-is
+                        await _enqueue(IPCResponse(
+                            id=request.id,
+                            stream=True,
+                            chunk=json.dumps(chunk, ensure_ascii=False),
+                        ))
+
+                    elif event_type == "error":
+                        await _enqueue(IPCResponse(
+                            id=request.id,
+                            stream=True,
+                            chunk=json.dumps(chunk, ensure_ascii=False),
+                        ))
+
+                    else:
+                        # Forward other event types (tool_start, tool_end,
+                        # chain_start, etc.) as stream chunks
+                        await _enqueue(IPCResponse(
+                            id=request.id,
+                            stream=True,
+                            chunk=json.dumps(chunk, ensure_ascii=False),
+                        ))
+
+                # Stream ended without cycle_done — send final done
+                await _enqueue(IPCResponse(
+                    id=request.id,
+                    stream=True,
+                    done=True,
+                    result={
+                        "response": full_response,
+                        "replied_to": [],
+                    },
+                ))
+
+            except TimeoutError as e:
+                logger.error("Timeout in streaming process_message: %s", e)
+                await queue.put(IPCResponse(
+                    id=request.id,
+                    error={
+                        "code": "IPC_TIMEOUT",
+                        "message": str(e) or "Stream processing timed out",
+                    },
+                ))
+            except Exception as e:
+                logger.exception(
+                    "Error in streaming process_message: %s", e,
+                )
+                await queue.put(IPCResponse(
+                    id=request.id,
+                    error={
+                        "code": "STREAM_ERROR",
+                        "message": str(e),
+                    },
+                ))
+            finally:
+                await queue.put(_SENTINEL)
+
+        async def _keepalive_producer() -> None:
+            """Emit keep-alive chunks when Agent SDK stream is silent."""
+            try:
+                while True:
+                    await asyncio.sleep(keepalive_interval)
+                    elapsed_since_chunk = time.monotonic() - last_chunk_time
+                    if elapsed_since_chunk >= keepalive_interval:
+                        elapsed = round(
+                            time.monotonic() - stream_start_time, 1,
+                        )
+                        logger.debug(
+                            "Keep-alive sent for %s (elapsed=%.1fs)",
+                            self.person_name, elapsed,
+                        )
+                        await _enqueue(IPCResponse(
                             id=request.id,
                             stream=True,
                             chunk=json.dumps(
-                                {"type": "bootstrap_complete"},
+                                {"type": "keepalive", "elapsed_s": elapsed},
                                 ensure_ascii=False,
                             ),
-                        )
+                        ))
+            except asyncio.CancelledError:
+                return
 
-                    yield IPCResponse(
-                        id=request.id,
-                        stream=True,
-                        done=True,
-                        result={
-                            "response": full_response,
-                            "replied_to": [],
-                            "cycle_result": cycle_result
-                        }
-                    )
-                    return
+        # Launch producer tasks
+        logger.debug(
+            "Starting queue-based stream merge for %s (keepalive=%ds)",
+            self.person_name, keepalive_interval,
+        )
+        producer_task = asyncio.create_task(
+            _stream_producer(),
+            name=f"stream-producer-{self.person_name}",
+        )
+        keepalive_task = asyncio.create_task(
+            _keepalive_producer(),
+            name=f"keepalive-{self.person_name}",
+        )
 
-                elif event_type == "bootstrap_busy":
-                    # Person is already bootstrapping — forward as-is
-                    yield IPCResponse(
-                        id=request.id,
-                        stream=True,
-                        chunk=json.dumps(chunk, ensure_ascii=False),
-                    )
-
-                elif event_type == "error":
-                    yield IPCResponse(
-                        id=request.id,
-                        stream=True,
-                        chunk=json.dumps(chunk, ensure_ascii=False)
-                    )
-
-                else:
-                    # Forward other event types (tool_start, tool_end,
-                    # chain_start, etc.) as stream chunks
-                    yield IPCResponse(
-                        id=request.id,
-                        stream=True,
-                        chunk=json.dumps(chunk, ensure_ascii=False)
-                    )
-
-            # If the stream ended without a cycle_done, send final done
-            yield IPCResponse(
-                id=request.id,
-                stream=True,
-                done=True,
-                result={
-                    "response": full_response,
-                    "replied_to": []
-                }
-            )
-
-        except TimeoutError as e:
-            logger.error("Timeout in streaming process_message: %s", e)
-            yield IPCResponse(
-                id=request.id,
-                error={
-                    "code": "IPC_TIMEOUT",
-                    "message": str(e) or "Stream processing timed out",
-                }
-            )
-        except Exception as e:
-            logger.exception("Error in streaming process_message: %s", e)
-            yield IPCResponse(
-                id=request.id,
-                error={
-                    "code": "STREAM_ERROR",
-                    "message": str(e)
-                }
+        try:
+            # ── Main loop: drain queue and yield ─────────────────
+            while True:
+                item = await queue.get()
+                if isinstance(item, _Sentinel):
+                    break
+                yield item
+                # If this was a terminal response, stop immediately
+                if item.done or item.error:
+                    break
+        finally:
+            keepalive_task.cancel()
+            # Ensure producer finishes; suppress CancelledError
+            try:
+                await keepalive_task
+            except asyncio.CancelledError:
+                pass
+            if not producer_task.done():
+                producer_task.cancel()
+                try:
+                    await producer_task
+                except asyncio.CancelledError:
+                    pass
+            logger.debug(
+                "Stream merge completed for %s (%.1fs)",
+                self.person_name,
+                time.monotonic() - stream_start_time,
             )
 
     async def _handle_run_heartbeat(self, params: dict[str, Any]) -> dict[str, Any]:

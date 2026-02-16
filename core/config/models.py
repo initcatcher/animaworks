@@ -20,7 +20,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 logger = logging.getLogger("animaworks.config")
 
@@ -159,10 +159,20 @@ class HumanNotificationConfig(BaseModel):
 class ServerConfig(BaseModel):
     """Server runtime configuration."""
 
-    ipc_stream_timeout: int = 300  # seconds (default raised from 120)
+    ipc_stream_timeout: int = 60  # per-chunk timeout in seconds
+    keepalive_interval: int = 30  # keep-alive emission interval in seconds
     stream_checkpoint_enabled: bool = True  # save tool results during streaming
     stream_retry_max: int = 3  # max automatic retries on stream disconnect
     stream_retry_delay_s: float = 5.0  # delay between retries (seconds)
+
+    @model_validator(mode="after")
+    def _validate_intervals(self) -> ServerConfig:
+        if self.keepalive_interval >= self.ipc_stream_timeout:
+            raise ValueError(
+                f"keepalive_interval ({self.keepalive_interval}) must be "
+                f"less than ipc_stream_timeout ({self.ipc_stream_timeout})"
+            )
+        return self
 
 
 class BackgroundToolConfig(BaseModel):
