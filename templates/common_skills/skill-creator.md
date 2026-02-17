@@ -1,9 +1,10 @@
 ---
 name: skill-creator
 description: >-
-  新しいMarkdownスキルファイルを正しいフォーマットで作成するためのメタスキル。
-  個人スキル・共通スキルをClaude Code形式で作成する手順を提供する。
-  「スキル作成」「スキルを作りたい」「新しいスキル」「手順書を作成」
+  Markdownスキルファイル(.md)を正しいYAMLフロントマター形式で作成するためのメタスキル。
+  個人スキル(skills/)・共通スキル(common_skills/)のdescription記述ルール、
+  「」キーワード設計、Progressive Disclosure構造、write_memory_fileでの保存手順を提供する。
+  「スキル作成」「スキルを作りたい」「新しいスキル」「手順書を作成」「スキルファイル」
 ---
 
 # skill-creator

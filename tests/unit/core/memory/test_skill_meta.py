@@ -599,10 +599,10 @@ class TestMatchTier3WithMockRetriever:
         mock_retriever = self._make_mock_retriever()
         # Two results pointing to same skill
         r1 = MagicMock()
-        r1.score = 0.9
+        r1.score = 0.96
         r1.metadata = {"file_path": str(p)}
         r2 = MagicMock()
-        r2.score = 0.9
+        r2.score = 0.94
         r2.metadata = {"file_path": "/other/deploy-guide.md"}
         mock_retriever.search.return_value = [r1, r2]
 
