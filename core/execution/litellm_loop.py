@@ -269,9 +269,18 @@ class LiteLLMExecutor(BaseExecutor):
 
             # ── Pre-flight: clamp max_tokens to fit context window ──
             ctx_window = _resolve_context_window(self._model_config.model)
-            msg_chars = sum(len(str(m.get("content", ""))) for m in messages)
-            tool_chars = len(_json.dumps(tools)) if tools else 0
-            est_input = (msg_chars + tool_chars) // CHARS_PER_TOKEN
+            try:
+                est_input = litellm.token_counter(
+                    model=self._model_config.model,
+                    messages=messages,
+                    tools=tools,
+                )
+            except Exception:
+                # Fallback to conservative char-based estimate (2 chars/token
+                # handles CJK better than the default 4)
+                msg_chars = sum(len(str(m.get("content", ""))) for m in messages)
+                tool_chars = len(_json.dumps(tools)) if tools else 0
+                est_input = (msg_chars + tool_chars) // 2
             available = ctx_window - est_input
             configured_max = llm_kwargs.get("max_tokens", 4096)
             iter_kwargs = llm_kwargs
