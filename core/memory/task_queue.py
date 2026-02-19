@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from core.schemas import TaskEntry
+from core.time_utils import now_iso
 
 logger = logging.getLogger("animaworks.task_queue")
 
@@ -149,7 +150,7 @@ class TaskQueueManager:
         if len(original_instruction) > _MAX_INSTRUCTION_CHARS:
             original_instruction = original_instruction[:_MAX_INSTRUCTION_CHARS]
             logger.warning("original_instruction truncated to %d chars", _MAX_INSTRUCTION_CHARS)
-        now = datetime.now().isoformat()
+        now = now_iso()
         entry = TaskEntry(
             task_id=uuid.uuid4().hex[:12],
             ts=now,
@@ -191,7 +192,7 @@ class TaskQueueManager:
             logger.warning("Task not found: %s", task_id)
             return None
 
-        now = datetime.now().isoformat()
+        now = now_iso()
         update: dict[str, Any] = {
             "task_id": task_id,
             "status": status,

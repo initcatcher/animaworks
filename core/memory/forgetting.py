@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from core.paths import load_prompt
+from core.time_utils import now_iso, now_jst
 
 logger = logging.getLogger("animaworks.forgetting")
 
@@ -178,8 +179,8 @@ class ForgettingEngine:
         Skip: Protected memory types, important chunks, already low
         """
         logger.info("Starting synaptic downscaling for anima=%s", self.anima_name)
-        now = datetime.now()
-        now_iso = now.isoformat()
+        now = now_jst()
+        now_iso_str = now_iso()
         total_scanned = 0
         total_marked = 0
         store = self._get_vector_store()
@@ -210,7 +211,7 @@ class ForgettingEngine:
                         ids_to_mark.append(chunk["id"])
                         metas_to_mark.append({
                             "activation_level": "low",
-                            "low_activation_since": now_iso,
+                            "low_activation_since": now_iso_str,
                         })
                     continue
 
@@ -241,7 +242,7 @@ class ForgettingEngine:
                     ids_to_mark.append(chunk["id"])
                     metas_to_mark.append({
                         "activation_level": "low",
-                        "low_activation_since": now_iso,
+                        "low_activation_since": now_iso_str,
                     })
 
             # Batch update
@@ -447,19 +448,19 @@ class ForgettingEngine:
             indexer = MemoryIndexer(store, self.anima_name, self.anima_dir)
 
             # Generate new ID
-            merged_id = f"{self.anima_name}/{memory_type}/merged_{datetime.now().strftime('%Y%m%d_%H%M%S')}#0"
+            merged_id = f"{self.anima_name}/{memory_type}/merged_{now_jst().strftime('%Y%m%d_%H%M%S')}#0"
 
             embedding = indexer._generate_embeddings([content])[0]
 
-            now_iso = datetime.now().isoformat()
+            now_iso_str = now_iso()
             metadata = {
                 "anima": self.anima_name,
                 "memory_type": memory_type,
                 "source_file": "merged",
                 "chunk_index": 0,
                 "total_chunks": 1,
-                "created_at": now_iso,
-                "updated_at": now_iso,
+                "created_at": now_iso_str,
+                "updated_at": now_iso_str,
                 "importance": "normal",
                 "access_count": 0,
                 "last_accessed_at": "",
@@ -512,7 +513,7 @@ class ForgettingEngine:
         # Archive directory for merged originals
         archive_dir = self.anima_dir / "archive" / "merged"
         archive_dir.mkdir(parents=True, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = now_jst().strftime("%Y%m%d_%H%M%S")
 
         # Archive primary original
         if primary_path.exists():
@@ -557,7 +558,7 @@ class ForgettingEngine:
         Action: Move source file to archive/forgotten/, delete from vector index
         """
         logger.info("Starting complete forgetting for anima=%s", self.anima_name)
-        now = datetime.now()
+        now = now_jst()
         store = self._get_vector_store()
         total_forgotten = 0
         archived_files: list[str] = []
@@ -641,7 +642,7 @@ class ForgettingEngine:
 
         # Add timestamp suffix if destination exists
         if dest_path.exists():
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = now_jst().strftime("%Y%m%d_%H%M%S")
             dest_path = self.archive_dir / f"{source_path.stem}_{timestamp}{source_path.suffix}"
 
         try:
