@@ -21,8 +21,9 @@ import logging
 import re
 import sys
 import time
-from datetime import datetime
 from pathlib import Path
+
+from core.time_utils import ensure_aware, now_jst
 
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any, Union
@@ -85,7 +86,7 @@ class AnimaRunner:
         self.scheduler: AsyncIOScheduler | None = None
         self.shutdown_event = asyncio.Event()
         self._ready_event = asyncio.Event()
-        self._started_at = datetime.now()
+        self._started_at = now_jst()
 
         # Rate-limit state for inbox watcher
         self._pending_trigger: bool = False
@@ -461,7 +462,7 @@ class AnimaRunner:
                     # NOTE: update_pending() overwrites the file. If multiple
                     # command-type cron tasks run concurrently, only the last
                     # result is retained.
-                    ts = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    ts = now_jst().strftime("%Y-%m-%d %H:%M")
                     pending = (
                         f"## cron結果: {task.name} ({ts})\n\n"
                         f"{stdout}\n"
@@ -893,7 +894,7 @@ class AnimaRunner:
         ``status: "ok"`` once ready.  The parent process polls this to
         confirm readiness.
         """
-        uptime = (datetime.now() - self._started_at).total_seconds()
+        uptime = (now_jst() - ensure_aware(self._started_at)).total_seconds()
         status = "ok" if self._ready_event.is_set() else "initializing"
         return {
             "status": status,

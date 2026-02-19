@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from pathlib import Path
 
+from core.time_utils import now_jst
 from core.tools._async_compat import run_sync
 
 logger = logging.getLogger("animaworks.priming")
@@ -281,7 +282,7 @@ class PrimingEngine:
 
         anima_name = self.anima_dir.name
         mention_tag = f"@{anima_name}"
-        now = datetime.now()
+        now = now_jst()
         cutoff_24h = now - timedelta(hours=24)
 
         result: list[ActivityEntry] = []
@@ -449,7 +450,7 @@ class PrimingEngine:
 
         anima_name = self.anima_dir.name
         mention_tag = f"@{anima_name}"
-        now = datetime.now()
+        now = now_jst()
         cutoff_24h = now - timedelta(hours=24)
 
         parts: list[str] = []

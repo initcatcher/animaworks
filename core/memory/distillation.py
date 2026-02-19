@@ -21,8 +21,9 @@ Pipeline:
 import json
 import logging
 import re
-from datetime import datetime
 from pathlib import Path
+
+from core.time_utils import now_iso, now_jst
 
 logger = logging.getLogger("animaworks.distillation")
 
@@ -370,7 +371,7 @@ class ProceduralDistiller:
             return []
 
         entries: list[dict] = []
-        today = datetime.now().date()
+        today = now_jst().date()
 
         for offset in range(days):
             target_date = today - timedelta(days=offset)
@@ -799,7 +800,7 @@ class ProceduralDistiller:
             "last_used": None,
             "confidence": 0.4,
             "version": 1,
-            "created_at": datetime.now().isoformat(),
+            "created_at": now_iso(),
             "auto_distilled": True,
         }
 
