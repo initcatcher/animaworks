@@ -64,6 +64,10 @@ class ResponseStream:
 
         # Evict oldest events if buffer exceeds limit
         if len(self.events) > MAX_EVENTS:
+            logger.info(
+                "[SSE-BUF] evict oldest events stream=%s buffer=%d->%d",
+                self.response_id, len(self.events), MAX_EVENTS,
+            )
             self.events = self.events[-MAX_EVENTS:]
 
         # Track accumulated state
@@ -80,6 +84,18 @@ class ResponseStream:
             if summary:
                 self.full_text = summary
 
+        # Log every event added (non-text_delta at INFO, text_delta at DEBUG to avoid flood)
+        if event != "text_delta":
+            logger.info(
+                "[SSE-BUF] add_event stream=%s seq=%d event=%s buf_size=%d",
+                self.response_id, seq, event, len(self.events),
+            )
+        else:
+            logger.debug(
+                "[SSE-BUF] add_event stream=%s seq=%d event=text_delta delta_len=%d total_text=%d",
+                self.response_id, seq, len(payload.get("text", "")), len(self.full_text),
+            )
+
         # Notify waiters
         self._new_event.set()
         self._new_event.clear()
@@ -88,7 +104,13 @@ class ResponseStream:
 
     def events_after(self, after_seq: int) -> list[SSEEvent]:
         """Return all events with seq > after_seq."""
-        return [e for e in self.events if e.seq > after_seq]
+        result = [e for e in self.events if e.seq > after_seq]
+        if result:
+            logger.info(
+                "[SSE-BUF] events_after stream=%s after_seq=%d found=%d",
+                self.response_id, after_seq, len(result),
+            )
+        return result
 
     @property
     def current_seq(self) -> int:
@@ -97,10 +119,22 @@ class ResponseStream:
 
     async def wait_new_event(self, timeout: float = 30.0) -> bool:
         """Wait for a new event. Returns False on timeout."""
+        logger.info(
+            "[SSE-WAIT] wait_new_event stream=%s timeout=%.1fs complete=%s seq=%d",
+            self.response_id, timeout, self.complete, self._seq_counter - 1,
+        )
         try:
             await asyncio.wait_for(self._new_event.wait(), timeout=timeout)
+            logger.info(
+                "[SSE-WAIT] got_event stream=%s new_seq=%d",
+                self.response_id, self._seq_counter - 1,
+            )
             return True
         except asyncio.TimeoutError:
+            logger.info(
+                "[SSE-WAIT] timeout stream=%s after=%.1fs complete=%s",
+                self.response_id, timeout, self.complete,
+            )
             return False
 
     @property
@@ -148,8 +182,9 @@ class StreamRegistry:
         )
         self._streams[response_id] = stream
         self._anima_active[anima_name] = response_id
-        logger.debug(
-            "Registered stream %s for anima=%s", response_id, anima_name,
+        logger.info(
+            "[SSE-REG] register stream=%s anima=%s from=%s total_streams=%d",
+            response_id, anima_name, from_person, len(self._streams),
         )
         return stream
 
@@ -161,17 +196,33 @@ class StreamRegistry:
         """Return the most recent (possibly still active) stream for an anima."""
         response_id = self._anima_active.get(anima_name)
         if response_id is None:
+            logger.info("[SSE-REG] get_active anima=%s -> no active stream", anima_name)
             return None
-        return self._streams.get(response_id)
+        stream = self._streams.get(response_id)
+        if stream:
+            logger.info(
+                "[SSE-REG] get_active anima=%s -> stream=%s status=%s events=%d",
+                anima_name, response_id, stream.status, stream.event_count,
+            )
+        return stream
 
     def mark_complete(self, response_id: str) -> None:
         """Mark a stream as complete."""
         stream = self._streams.get(response_id)
         if stream:
             stream.complete = True
+            logger.info(
+                "[SSE-REG] mark_complete stream=%s anima=%s events=%d text_len=%d",
+                response_id, stream.anima_name, stream.event_count,
+                len(stream.full_text),
+            )
             # Clear the active mapping if this is still the active stream
             if self._anima_active.get(stream.anima_name) == response_id:
                 self._anima_active.pop(stream.anima_name, None)
+        else:
+            logger.info(
+                "[SSE-REG] mark_complete stream=%s NOT_FOUND", response_id,
+            )
 
     def cleanup(self) -> int:
         """Remove expired streams. Returns count of removed entries."""
@@ -220,7 +271,13 @@ class StreamRegistry:
     ) -> str:
         """Add an event to the stream buffer and return the formatted SSE frame."""
         sse_event = stream.add_event(event, payload)
-        return format_sse_with_id(event, payload, sse_event.event_id)
+        frame = format_sse_with_id(event, payload, sse_event.event_id)
+        if event != "text_delta":
+            logger.info(
+                "[SSE-FRAME] yield stream=%s event=%s id=%s frame_len=%d",
+                stream.response_id, event, sse_event.event_id, len(frame),
+            )
+        return frame
 
 
 def format_sse_with_id(

@@ -71,7 +71,7 @@ export async function fetchStreamProgress(animaName, responseId) {
 export async function streamChat(animaName, body, signal, callbacks) {
   const url = `/api/animas/${encodeURIComponent(animaName)}/chat/stream`;
   const start = performance.now();
-  logger.info(`Stream start: ${animaName}`);
+  logger.info(`[SSE-FE] streamChat START anima=${animaName} url=${url}`);
 
   // Track response ID and last event ID for reconnection
   let responseId = null;
@@ -79,6 +79,7 @@ export async function streamChat(animaName, body, signal, callbacks) {
 
   const headers = body instanceof FormData ? {} : { "Content-Type": "application/json" };
 
+  logger.info(`[SSE-FE] fetch POST ${url}`);
   const res = await fetch(url, {
     method: "POST",
     headers,
@@ -86,31 +87,41 @@ export async function streamChat(animaName, body, signal, callbacks) {
     ...(signal ? { signal } : {}),
   });
 
+  logger.info(`[SSE-FE] fetch response status=${res.status} ok=${res.ok} type=${res.headers.get("content-type")}`);
+
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    logger.error(`Stream failed: ${res.status} ${text}`);
+    logger.error(`[SSE-FE] fetch FAILED status=${res.status} body=${text.slice(0, 200)}`);
     throw new Error(`API ${res.status}: ${text}`);
   }
 
   try {
-    await _processStream(res, callbacks, (id) => { responseId = id; }, (id) => { lastEventId = id; }, signal);
+    logger.info(`[SSE-FE] _processStream starting anima=${animaName}`);
+    await _processStream(res, callbacks, (id) => { responseId = id; logger.info(`[SSE-FE] response_id set: ${id}`); }, (id) => { lastEventId = id; }, signal);
+    logger.info(`[SSE-FE] _processStream completed anima=${animaName} responseId=${responseId} lastEventId=${lastEventId}`);
   } catch (err) {
+    const elapsed = ((performance.now() - start) / 1000).toFixed(1);
+    logger.info(`[SSE-FE] _processStream ERROR anima=${animaName} err=${err.name}:${err.message} elapsed=${elapsed}s responseId=${responseId} lastEventId=${lastEventId}`);
     if (err.name === "AbortError") throw err;
 
     // Attempt reconnection with exponential backoff
     if (responseId) {
-      logger.info(`Stream interrupted, attempting reconnect for ${responseId}`);
+      logger.info(`[SSE-FE] reconnect attempt anima=${animaName} responseId=${responseId} lastEventId=${lastEventId}`);
       const reconnected = await _reconnectWithBackoff(
         animaName, responseId, lastEventId, body, signal, callbacks,
       );
-      if (reconnected) return;
+      if (reconnected) {
+        logger.info(`[SSE-FE] reconnect SUCCESS anima=${animaName}`);
+        return;
+      }
+      logger.info(`[SSE-FE] reconnect FAILED anima=${animaName}`);
     }
 
     throw err;
   }
 
   const elapsed = ((performance.now() - start) / 1000).toFixed(1);
-  logger.info(`Stream complete: ${animaName} (${elapsed}s)`);
+  logger.info(`[SSE-FE] streamChat COMPLETE anima=${animaName} elapsed=${elapsed}s responseId=${responseId}`);
 }
 
 /**
@@ -121,52 +132,71 @@ async function _processStream(res, callbacks, setResponseId, setLastEventId, sig
   const decoder = new TextDecoder();
   let buffer = "";
   let chunkCount = 0;
+  let sseEventCount = 0;
+  let lastChunkTime = performance.now();
+  const streamStart = performance.now();
 
-  logger.debug("_processStream: reader opened");
+  logger.info("[SSE-FE] _processStream: reader opened");
 
   try {
     while (true) {
       if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
+      const readStart = performance.now();
       const { done, value } = await reader.read();
+      const readMs = (performance.now() - readStart).toFixed(0);
+      const gapMs = (performance.now() - lastChunkTime).toFixed(0);
+
       if (done) {
-        logger.debug(`_processStream: reader done after ${chunkCount} chunks`);
+        const totalElapsed = ((performance.now() - streamStart) / 1000).toFixed(1);
+        logger.info(`[SSE-FE] reader DONE chunks=${chunkCount} sseEvents=${sseEventCount} elapsed=${totalElapsed}s bufferRemaining=${buffer.length}`);
         break;
       }
       chunkCount++;
+      lastChunkTime = performance.now();
 
+      const rawLen = value ? value.byteLength : 0;
       buffer += decoder.decode(value, { stream: true });
       const { parsed, remaining } = parseConvSSE(buffer);
       buffer = remaining;
 
+      if (chunkCount % 50 === 0 || parsed.length > 0) {
+        logger.info(`[SSE-FE] chunk#${chunkCount} rawBytes=${rawLen} parsedEvents=${parsed.length} bufRemain=${remaining.length} readMs=${readMs} gapMs=${gapMs}`);
+      }
+
       for (const { id, event, data } of parsed) {
+        sseEventCount++;
         // Track event IDs for reconnection
         if (id) setLastEventId(id);
 
         switch (event) {
           case "stream_start":
             if (data.response_id) setResponseId(data.response_id);
-            logger.debug(`SSE stream_start response_id=${data.response_id}`);
+            logger.info(`[SSE-FE] EVENT stream_start response_id=${data.response_id} id=${id}`);
             break;
 
           case "text_delta":
-            logger.debug(`SSE text_delta len=${(data.text || "").length}`);
+            // text_delta is high-frequency; log periodically
+            if (sseEventCount % 20 === 0) {
+              logger.info(`[SSE-FE] EVENT text_delta (periodic) sseEvent#${sseEventCount} delta_len=${(data.text || "").length} id=${id}`);
+            }
             callbacks.onTextDelta?.(data.text || "");
             break;
 
           case "tool_start":
-            logger.debug(`SSE tool_start tool=${data.tool_name}`);
+            logger.info(`[SSE-FE] EVENT tool_start tool=${data.tool_name} id=${id}`);
             callbacks.onToolStart?.(data.tool_name);
             break;
 
           case "tool_end":
-            logger.debug(`SSE tool_end tool=${data.tool_name || "?"}`);
+            logger.info(`[SSE-FE] EVENT tool_end tool=${data.tool_name || "?"} id=${id}`);
             callbacks.onToolEnd?.();
             break;
 
           case "done": {
             const summaryLen = (data.summary || "").length;
-            logger.debug(`SSE done summary_len=${summaryLen} emotion=${data.emotion || "neutral"}`);
+            const totalElapsed = ((performance.now() - streamStart) / 1000).toFixed(1);
+            logger.info(`[SSE-FE] EVENT done summary_len=${summaryLen} emotion=${data.emotion || "neutral"} totalEvents=${sseEventCount} elapsed=${totalElapsed}s id=${id}`);
             callbacks.onDone?.({
               summary: data.summary || null,
               emotion: data.emotion || "neutral",
@@ -175,42 +205,44 @@ async function _processStream(res, callbacks, setResponseId, setLastEventId, sig
           }
 
           case "error":
-            logger.debug(`SSE error: ${getErrorMessage(data)}`);
+            logger.info(`[SSE-FE] EVENT error code=${data.code || "?"} msg=${getErrorMessage(data)} id=${id}`);
             callbacks.onError?.({ message: getErrorMessage(data) });
             break;
 
           case "bootstrap":
-            logger.debug(`SSE bootstrap status=${data.status}`);
+            logger.info(`[SSE-FE] EVENT bootstrap status=${data.status} id=${id}`);
             callbacks.onBootstrap?.(data);
             break;
 
           case "chain_start":
-            logger.debug("SSE chain_start");
+            logger.info(`[SSE-FE] EVENT chain_start id=${id}`);
             callbacks.onChainStart?.();
             break;
 
           case "heartbeat_relay_start":
-            logger.debug(`SSE heartbeat_relay_start msg=${data.message || ""}`);
+            logger.info(`[SSE-FE] EVENT heartbeat_relay_start msg=${data.message || ""} id=${id}`);
             callbacks.onHeartbeatRelayStart?.({ message: data.message || "" });
             break;
 
           case "heartbeat_relay":
-            logger.debug(`SSE heartbeat_relay len=${(data.text || "").length}`);
+            logger.info(`[SSE-FE] EVENT heartbeat_relay len=${(data.text || "").length} id=${id}`);
             callbacks.onHeartbeatRelay?.({ text: data.text || "" });
             break;
 
           case "heartbeat_relay_done":
-            logger.debug("SSE heartbeat_relay_done");
+            logger.info(`[SSE-FE] EVENT heartbeat_relay_done id=${id}`);
             callbacks.onHeartbeatRelayDone?.();
             break;
 
           default:
-            logger.debug(`SSE unknown event=${event}`);
+            logger.info(`[SSE-FE] EVENT unknown event=${event} id=${id}`);
             break;
         }
       }
     }
   } finally {
+    const totalElapsed = ((performance.now() - streamStart) / 1000).toFixed(1);
+    logger.info(`[SSE-FE] reader.releaseLock chunks=${chunkCount} sseEvents=${sseEventCount} elapsed=${totalElapsed}s`);
     reader.releaseLock();
   }
 }
@@ -222,11 +254,17 @@ async function _reconnectWithBackoff(animaName, responseId, lastEventId, origina
   const MAX_RETRIES = 5;
   const MAX_DELAY = 30000;
   let delay = 1000;
+  const reconnectStart = performance.now();
+
+  logger.info(`[SSE-FE] reconnect START anima=${animaName} responseId=${responseId} lastEventId=${lastEventId}`);
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    if (signal?.aborted) return false;
+    if (signal?.aborted) {
+      logger.info(`[SSE-FE] reconnect ABORTED attempt=${attempt}`);
+      return false;
+    }
 
-    logger.info(`Reconnect attempt ${attempt}/${MAX_RETRIES} (delay: ${delay}ms)`);
+    logger.info(`[SSE-FE] reconnect attempt=${attempt}/${MAX_RETRIES} delay=${delay}ms`);
     callbacks.onReconnecting?.();
 
     await new Promise((r) => setTimeout(r, delay));
@@ -246,6 +284,7 @@ async function _reconnectWithBackoff(animaName, responseId, lastEventId, origina
       });
 
       const url = `/api/animas/${encodeURIComponent(animaName)}/chat/stream`;
+      logger.info(`[SSE-FE] reconnect fetch POST ${url} lastEventId=${lastEventId}`);
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -253,22 +292,31 @@ async function _reconnectWithBackoff(animaName, responseId, lastEventId, origina
         ...(signal ? { signal } : {}),
       });
 
+      logger.info(`[SSE-FE] reconnect fetch response status=${res.status} ok=${res.ok}`);
+
       if (!res.ok) {
-        logger.warn(`Reconnect failed: ${res.status}`);
+        logger.warn(`[SSE-FE] reconnect FAILED status=${res.status} attempt=${attempt}`);
         delay = Math.min(delay * 2, MAX_DELAY);
         continue;
       }
 
       callbacks.onReconnected?.();
+      logger.info(`[SSE-FE] reconnect SUCCESS attempt=${attempt} processing resumed stream`);
       await _processStream(res, callbacks, () => {}, (id) => { lastEventId = id; }, signal);
+      const elapsed = ((performance.now() - reconnectStart) / 1000).toFixed(1);
+      logger.info(`[SSE-FE] reconnect COMPLETE anima=${animaName} elapsed=${elapsed}s`);
       return true;
     } catch (err) {
-      if (err.name === "AbortError") return false;
-      logger.warn(`Reconnect attempt ${attempt} error: ${err.message}`);
+      if (err.name === "AbortError") {
+        logger.info(`[SSE-FE] reconnect ABORTED during attempt=${attempt}`);
+        return false;
+      }
+      logger.warn(`[SSE-FE] reconnect attempt=${attempt} ERROR: ${err.name}:${err.message}`);
       delay = Math.min(delay * 2, MAX_DELAY);
     }
   }
 
-  logger.error("All reconnect attempts failed");
+  const elapsed = ((performance.now() - reconnectStart) / 1000).toFixed(1);
+  logger.error(`[SSE-FE] reconnect ALL_FAILED anima=${animaName} elapsed=${elapsed}s`);
   return false;
 }

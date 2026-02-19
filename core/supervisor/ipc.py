@@ -342,22 +342,43 @@ class IPCClient:
         if timeout is None:
             timeout = self._resolve_ipc_timeout()
         if not self.reader or not self.writer:
+            logger.info("[IPC-STREAM] not connected socket=%s", self.socket_path)
             raise RuntimeError("Not connected")
+
+        import time as _time
+        _ipc_start = _time.monotonic()
+        chunk_count = 0
 
         async with self._lock:
             # Send request
             request_line = request.to_json() + "\n"
             self.writer.write(request_line.encode("utf-8"))
             await self.writer.drain()
-            logger.debug("IPC stream request sent: %s (id=%s)", request.method, request.id)
+            logger.info(
+                "[IPC-STREAM] request sent method=%s id=%s timeout=%.1fs socket=%s",
+                request.method, request.id, timeout, self.socket_path,
+            )
 
             # Read streaming responses until done
             while True:
-                response_line_bytes = await asyncio.wait_for(
-                    self.reader.readline(),
-                    timeout=timeout,
-                )
+                try:
+                    response_line_bytes = await asyncio.wait_for(
+                        self.reader.readline(),
+                        timeout=timeout,
+                    )
+                except asyncio.TimeoutError:
+                    elapsed = _time.monotonic() - _ipc_start
+                    logger.info(
+                        "[IPC-STREAM] TIMEOUT method=%s id=%s chunks=%d elapsed=%.1fs per_chunk_timeout=%.1fs",
+                        request.method, request.id, chunk_count, elapsed, timeout,
+                    )
+                    raise
                 if not response_line_bytes:
+                    elapsed = _time.monotonic() - _ipc_start
+                    logger.info(
+                        "[IPC-STREAM] CONNECTION_CLOSED method=%s id=%s chunks=%d elapsed=%.1fs",
+                        request.method, request.id, chunk_count, elapsed,
+                    )
                     raise RuntimeError("Connection closed during stream")
 
                 response_line = response_line_bytes.decode("utf-8").strip()
@@ -365,9 +386,16 @@ class IPCClient:
                     continue
 
                 response = IPCResponse.from_json(response_line)
+                chunk_count += 1
 
                 # Non-streaming response (error or unexpected)
                 if not response.stream:
+                    elapsed = _time.monotonic() - _ipc_start
+                    logger.info(
+                        "[IPC-STREAM] non-stream response method=%s id=%s chunks=%d elapsed=%.1fs error=%s",
+                        request.method, request.id, chunk_count, elapsed,
+                        response.error,
+                    )
                     yield response
                     return
 
@@ -375,6 +403,11 @@ class IPCClient:
 
                 # Final chunk with done=True ends the stream
                 if response.done:
+                    elapsed = _time.monotonic() - _ipc_start
+                    logger.info(
+                        "[IPC-STREAM] done method=%s id=%s chunks=%d elapsed=%.1fs",
+                        request.method, request.id, chunk_count, elapsed,
+                    )
                     return
 
     async def close(self) -> None:

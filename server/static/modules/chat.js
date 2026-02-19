@@ -136,7 +136,7 @@ export async function sendChat(message) {
     }
     const body = JSON.stringify(bodyObj);
 
-    logger.debug(`sendChat: starting stream for ${name} msg_len=${message.length}`);
+    logger.info(`[SSE-UI] sendChat START anima=${name} msg_len=${message.length}`);
     await streamChat(name, body, null, {
       onTextDelta: (text) => {
         streamingMsg.afterHeartbeatRelay = false;
@@ -216,7 +216,7 @@ export async function sendChat(message) {
 
     // Ensure streaming is finalized if stream ended without done event
     if (streamingMsg.streaming) {
-      logger.debug(`sendChat: finalize fallback — text_len=${streamingMsg.text.length} afterRelay=${streamingMsg.afterHeartbeatRelay}`);
+      logger.info(`[SSE-UI] sendChat FINALIZE_FALLBACK anima=${name} text_len=${streamingMsg.text.length} afterRelay=${streamingMsg.afterHeartbeatRelay}`);
       streamingMsg.streaming = false;
       if (!streamingMsg.text) {
         streamingMsg.text = streamingMsg.afterHeartbeatRelay
@@ -226,12 +226,12 @@ export async function sendChat(message) {
       streamingMsg.afterHeartbeatRelay = false;
       renderChat();
     }
-    logger.debug(`sendChat: stream completed for ${name}`);
+    logger.info(`[SSE-UI] sendChat COMPLETE anima=${name} final_text_len=${streamingMsg.text.length}`);
   } catch (err) {
     if (err.name !== "AbortError") {
       logger.error("Chat stream error", { anima: name, error: err.message, name: err.name });
     }
-    logger.debug(`sendChat: catch — error=${err.message} name=${err.name}`);
+    logger.info(`[SSE-UI] sendChat ERROR anima=${name} error=${err.name}:${err.message}`);
     streamingMsg.text = `[エラー] ${err.message}`;
     streamingMsg.streaming = false;
     streamingMsg.activeTool = null;
@@ -308,11 +308,20 @@ export function initImageInput() {
  */
 export async function resumeActiveStream(animaName) {
   try {
+    logger.info(`[SSE-UI] resumeActiveStream START anima=${animaName}`);
     const active = await fetchActiveStream(animaName);
-    if (!active || active.status !== "streaming") return;
+    if (!active || active.status !== "streaming") {
+      logger.info(`[SSE-UI] resumeActiveStream no active stream anima=${animaName} active=${JSON.stringify(active)}`);
+      return;
+    }
 
+    logger.info(`[SSE-UI] resumeActiveStream found active stream anima=${animaName} responseId=${active.response_id} events=${active.event_count}`);
     const progress = await fetchStreamProgress(animaName, active.response_id);
-    if (!progress) return;
+    if (!progress) {
+      logger.info(`[SSE-UI] resumeActiveStream no progress anima=${animaName}`);
+      return;
+    }
+    logger.info(`[SSE-UI] resumeActiveStream progress anima=${animaName} status=${progress.status} text_len=${(progress.full_text||"").length} lastEventId=${progress.last_event_id}`);
 
     // Show accumulated text in streaming bubble
     if (!state.chatHistories[animaName]) state.chatHistories[animaName] = [];
@@ -379,6 +388,7 @@ export async function resumeActiveStream(animaName) {
       renderChat();
     }
   } catch (err) {
+    logger.info(`[SSE-UI] resumeActiveStream ERROR anima=${animaName} err=${err.name}:${err.message}`);
     logger.error("Resume stream error", { anima: animaName, error: err.message });
   } finally {
     const chatInput = dom.chatInput || document.getElementById("chatInput");

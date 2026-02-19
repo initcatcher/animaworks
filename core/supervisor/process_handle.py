@@ -307,15 +307,31 @@ class ProcessHandle:
 
         self._streaming = True
         self._streaming_started_at = datetime.now()
+        logger.info(
+            "[PH-STREAM] start anima=%s method=%s req_id=%s state=%s pid=%s",
+            self.anima_name, method, request.id, self.state.value,
+            self.process.pid if self.process else "N/A",
+        )
+        chunk_count = 0
         try:
             async for response in self.ipc_client.send_request_stream(
                 request, timeout=timeout
             ):
+                chunk_count += 1
                 yield response
-        except RuntimeError:
+        except RuntimeError as e:
+            logger.info(
+                "[PH-STREAM] FAILED anima=%s method=%s chunks=%d error=%s",
+                self.anima_name, method, chunk_count, e,
+            )
             self.state = ProcessState.FAILED
             raise
         finally:
+            elapsed = (datetime.now() - self._streaming_started_at).total_seconds() if self._streaming_started_at else 0
+            logger.info(
+                "[PH-STREAM] end anima=%s method=%s chunks=%d elapsed=%.1fs",
+                self.anima_name, method, chunk_count, elapsed,
+            )
             self._streaming = False
             self._streaming_started_at = None
 

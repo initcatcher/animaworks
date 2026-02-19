@@ -18,6 +18,11 @@ export function parseConvSSE(buffer) {
 
   for (const part of parts) {
     if (!part.trim()) continue;
+    // Skip SSE comments (keepalive)
+    if (part.trim().startsWith(":")) {
+      logger.info(`[SSE-PARSE] keepalive comment received: "${part.trim().slice(0, 50)}"`);
+      continue;
+    }
     let eventName = "message";
     let eventId = null;
     const dataLines = [];
@@ -35,9 +40,13 @@ export function parseConvSSE(buffer) {
         parsed.push({ id: eventId, event: eventName, data: JSON.parse(dataLines.join("\n")) });
       } catch {
         const raw = dataLines.join("\n");
-        logger.warn(`JSON parse failed for event '${eventName}':`, raw.slice(0, 100));
+        logger.warn(`[SSE-PARSE] JSON parse FAILED event='${eventName}': ${raw.slice(0, 100)}`);
       }
     }
+  }
+  if (parsed.length > 0) {
+    const eventNames = parsed.map(e => e.event).join(",");
+    logger.info(`[SSE-PARSE] parsed=${parsed.length} events=[${eventNames}] remaining=${remaining.length}`);
   }
   return { parsed, remaining };
 }

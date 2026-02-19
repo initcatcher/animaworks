@@ -532,16 +532,30 @@ def create_chat_router() -> APIRouter:
             """Async generator that converts IPC stream to SSE frames."""
             full_response = ""
             stream_done = False
+            ipc_chunk_count = 0
+            sse_frame_count = 0
+            keepalive_count = 0
+            import time as _time
+            _stream_start_time = _time.monotonic()
             try:
+                logger.info(
+                    "[SSE-STREAM] start anima=%s stream=%s user=%s",
+                    name, stream.response_id, body.from_person,
+                )
                 await emit(request, "anima.status", {"name": name, "status": "thinking"})
 
                 # Emit stream_start with response_id for client tracking
+                sse_frame_count += 1
                 yield registry.format_sse(stream, "stream_start", {"response_id": stream.response_id})
 
                 from core.config import load_config
                 _config = load_config()
                 _timeout = float(_config.server.ipc_stream_timeout)
 
+                logger.info(
+                    "[SSE-STREAM] starting IPC stream anima=%s timeout=%.1f",
+                    name, _timeout,
+                )
                 async for ipc_response in supervisor.send_request_stream(
                     anima_name=name,
                     method="process_message",
@@ -554,6 +568,7 @@ def create_chat_router() -> APIRouter:
                     },
                     timeout=_timeout,
                 ):
+                    ipc_chunk_count += 1
                     if ipc_response.done:
                         # Final response with full result
                         result = ipc_response.result or {}
@@ -565,6 +580,13 @@ def create_chat_router() -> APIRouter:
                         cycle_result["summary"] = clean_text
                         cycle_result["emotion"] = emotion
                         full_response = clean_text
+                        sse_frame_count += 1
+                        elapsed = _time.monotonic() - _stream_start_time
+                        logger.info(
+                            "[SSE-STREAM] IPC done anima=%s stream=%s ipc_chunks=%d sse_frames=%d keepalives=%d elapsed=%.1fs response_len=%d",
+                            name, stream.response_id, ipc_chunk_count, sse_frame_count,
+                            keepalive_count, elapsed, len(clean_text),
+                        )
                         yield registry.format_sse(stream, "done", cycle_result or {"summary": clean_text, "emotion": emotion})
                         stream_done = True
                         break
@@ -576,6 +598,12 @@ def create_chat_router() -> APIRouter:
 
                             # Keep-alive chunks → SSE comment (invisible to client parser)
                             if chunk_data.get("type") == "keepalive":
+                                keepalive_count += 1
+                                elapsed = _time.monotonic() - _stream_start_time
+                                logger.info(
+                                    "[SSE-KEEPALIVE] anima=%s stream=%s keepalive#%d elapsed=%.1fs",
+                                    name, stream.response_id, keepalive_count, elapsed,
+                                )
                                 yield ": keepalive\n\n"
                                 continue
 
@@ -590,6 +618,12 @@ def create_chat_router() -> APIRouter:
                                 if evt_name == "done":
                                     full_response = evt_payload.get("summary", full_response)
                                     stream_done = True
+                                sse_frame_count += 1
+                                if evt_name != "text_delta":
+                                    logger.info(
+                                        "[SSE-STREAM] yield event=%s anima=%s stream=%s frame#%d",
+                                        evt_name, name, stream.response_id, sse_frame_count,
+                                    )
                                 yield registry.format_sse(stream, evt_name, evt_payload)
                         except json.JSONDecodeError:
                             # Raw text chunk fallback
@@ -613,25 +647,51 @@ def create_chat_router() -> APIRouter:
 
                 # Fallback: stream ended without done event
                 if not stream_done:
-                    logger.warning("Stream ended without done event for anima=%s", name)
+                    elapsed = _time.monotonic() - _stream_start_time
+                    logger.warning(
+                        "[SSE-STREAM] INCOMPLETE anima=%s stream=%s ipc_chunks=%d sse_frames=%d elapsed=%.1fs",
+                        name, stream.response_id, ipc_chunk_count, sse_frame_count, elapsed,
+                    )
                     yield registry.format_sse(stream, "error", {
                         "code": "STREAM_INCOMPLETE",
                         "message": "ストリームが予期せず終了しました。再試行してください。",
                     })
 
             except ValueError as e:
-                logger.error("IPC stream error for anima=%s: %s", name, e)
+                elapsed = _time.monotonic() - _stream_start_time
+                logger.error(
+                    "[SSE-STREAM] IPC_ERROR anima=%s stream=%s elapsed=%.1fs error=%s",
+                    name, stream.response_id, elapsed, e,
+                )
                 yield registry.format_sse(stream, "error", {"code": "IPC_ERROR", "message": str(e)})
             except KeyError:
-                logger.error("Anima not found during stream: %s", name)
+                elapsed = _time.monotonic() - _stream_start_time
+                logger.error(
+                    "[SSE-STREAM] ANIMA_NOT_FOUND anima=%s stream=%s elapsed=%.1fs",
+                    name, stream.response_id, elapsed,
+                )
                 yield registry.format_sse(stream, "error", {"code": "ANIMA_NOT_FOUND", "message": f"Anima not found: {name}"})
             except TimeoutError:
-                logger.error("IPC stream timeout for anima=%s", name)
+                elapsed = _time.monotonic() - _stream_start_time
+                logger.error(
+                    "[SSE-STREAM] IPC_TIMEOUT anima=%s stream=%s elapsed=%.1fs ipc_chunks=%d",
+                    name, stream.response_id, elapsed, ipc_chunk_count,
+                )
                 yield registry.format_sse(stream, "error", {"code": "IPC_TIMEOUT", "message": "応答がタイムアウトしました"})
             except Exception:
-                logger.exception("IPC stream error for anima=%s", name)
+                elapsed = _time.monotonic() - _stream_start_time
+                logger.exception(
+                    "[SSE-STREAM] STREAM_ERROR anima=%s stream=%s elapsed=%.1fs ipc_chunks=%d",
+                    name, stream.response_id, elapsed, ipc_chunk_count,
+                )
                 yield registry.format_sse(stream, "error", {"code": "STREAM_ERROR", "message": "Internal server error"})
             finally:
+                elapsed = _time.monotonic() - _stream_start_time
+                logger.info(
+                    "[SSE-STREAM] finalize anima=%s stream=%s ipc_chunks=%d sse_frames=%d keepalives=%d elapsed=%.1fs done=%s",
+                    name, stream.response_id, ipc_chunk_count, sse_frame_count,
+                    keepalive_count, elapsed, stream_done,
+                )
                 registry.mark_complete(stream.response_id)
                 await emit(request, "anima.status", {"name": name, "status": "idle"})
 
@@ -695,8 +755,19 @@ def _handle_resume(
     from_person: str = "human",
 ):
     """Handle SSE stream resume request."""
+    logger.info(
+        "[SSE-RESUME] request stream=%s anima=%s last_event_id=%s from=%s",
+        resume_id, anima_name, last_event_id, from_person,
+    )
     stream = registry.get(resume_id)
     if stream is None or stream.anima_name != anima_name or stream.from_person != from_person:
+        logger.info(
+            "[SSE-RESUME] NOT_FOUND stream=%s (exists=%s anima_match=%s from_match=%s)",
+            resume_id,
+            stream is not None,
+            stream.anima_name == anima_name if stream else "N/A",
+            stream.from_person == from_person if stream else "N/A",
+        )
         async def _not_found():
             yield _format_sse("error", {"code": "STREAM_NOT_FOUND", "message": "Stream not found or access denied"})
         return StreamingResponse(
@@ -713,22 +784,46 @@ def _handle_resume(
         except (ValueError, IndexError):
             pass
 
+    logger.info(
+        "[SSE-RESUME] replaying stream=%s after_seq=%d complete=%s total_events=%d",
+        resume_id, after_seq, stream.complete, stream.event_count,
+    )
+
     async def _replay_events():
         from server.stream_registry import format_sse_with_id
         current_seq = after_seq
+        replay_count = 0
         for event in stream.events_after(after_seq):
             yield format_sse_with_id(event.event, event.payload, event.event_id)
             current_seq = event.seq
+            replay_count += 1
+
+        logger.info(
+            "[SSE-RESUME] replayed stream=%s count=%d current_seq=%d complete=%s",
+            resume_id, replay_count, current_seq, stream.complete,
+        )
 
         if not stream.complete:
+            wait_count = 0
             while not stream.complete:
                 got_event = await stream.wait_new_event(timeout=30.0)
                 if not got_event:
+                    wait_count += 1
+                    logger.info(
+                        "[SSE-RESUME] keepalive stream=%s wait#%d current_seq=%d",
+                        resume_id, wait_count, current_seq,
+                    )
                     yield ": keepalive\n\n"
                     continue
-                for event in stream.events_after(current_seq):
+                new_events = stream.events_after(current_seq)
+                for event in new_events:
                     yield format_sse_with_id(event.event, event.payload, event.event_id)
                     current_seq = event.seq
+                logger.info(
+                    "[SSE-RESUME] new_events stream=%s count=%d current_seq=%d",
+                    resume_id, len(new_events), current_seq,
+                )
+        logger.info("[SSE-RESUME] done stream=%s final_seq=%d", resume_id, current_seq)
 
     return StreamingResponse(
         _replay_events(),
