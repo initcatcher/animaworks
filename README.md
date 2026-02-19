@@ -59,9 +59,9 @@ Most AI agent frameworks truncate memory to fit the context window — leaving a
 
 ## Quick Start
 
-### The Simplest Way: Claude Code (Mode A1)
+### Step 1: Install
 
-If you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, **no API key configuration is needed**. Claude Code handles authentication on its own, and each Anima runs as a Claude Code subprocess with full tool access (Read / Write / Edit / Bash / Grep / Glob).
+If you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, **no API key configuration is needed**. Claude Code handles authentication on its own.
 
 ```bash
 git clone https://github.com/xuiltul/animaworks.git
@@ -69,12 +69,30 @@ cd animaworks
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
+```
 
-animaworks init    # Interactive first-time setup
+### Step 2: Initialize & Start
+
+```bash
+animaworks init    # Opens setup wizard in your browser
 animaworks start   # Start server
 ```
 
-Open http://localhost:18500/ — that's it.
+### Step 3: Setup Wizard (in your browser)
+
+`animaworks init` opens a setup wizard at http://localhost:18500/setup/ that walks you through:
+
+1. **Language** — Choose your preferred language (17 supported)
+2. **User Info** — Set your username and display name
+3. **AI Provider** — Select your LLM provider and enter API keys (or just select Claude Code — no key needed)
+4. **Leader** — Name your first Anima (your organization's leader)
+5. **Confirm** — Review and finish
+
+### Step 4: Open the Dashboard
+
+Once setup is complete and the server is running, open http://localhost:18500/ — your Anima is ready. Click on it to start chatting.
+
+**That's the entire setup.** Everything from here on happens in the browser.
 
 ### Alternative: Direct API Access
 
@@ -86,6 +104,78 @@ cp .env.example .env
 ```
 
 See [API Key Reference](#api-key-reference) below for details.
+
+## Web UI
+
+After `animaworks start`, everything happens in the browser. No CLI needed.
+
+### Dashboard (`http://localhost:18500/`)
+
+- **Home** — System overview, Anima status cards with avatars, recent activity timeline
+- **Chat** — Full conversation with any Anima (streaming responses, image attachments, conversation history)
+- **Board** — Slack-style shared channels (#general, #ops, etc.) and DM history between Animas
+- **Animas** — Detailed view of each Anima's identity, current state, pending tasks, memory statistics
+- **Activity** — Full activity timeline with filtering
+- **Memory** — Browse any Anima's memory files (episodes, knowledge, procedures)
+- **Logs** — Real-time server and Anima logs
+- **Settings** — Configuration, API key status, authentication management
+
+### Workspace (`http://localhost:18500/workspace/`)
+
+An interactive 3D office where your Animas work as visible characters:
+
+- Characters sit at desks, walk around, and interact with each other in real time
+- Visual states reflect what each Anima is doing (idle, working, thinking, talking, sleeping)
+- Message bubbles appear when Animas communicate with each other
+- Click any character to open a chat overlay with live expression changes
+- Activity timeline shows all events as they happen
+
+## Build Your Team
+
+Your first Anima (the leader) can **hire new team members for you**. Just tell it what kind of people you need:
+
+> "I'd like to hire a researcher who monitors industry trends, and an engineer who manages our infrastructure."
+
+The leader Anima will create new team members with appropriate roles, personalities, and reporting structure — all through conversation. No CLI commands needed.
+
+The leader can also **manage the team**: enable/disable members, restart processes, and assign tasks — all through the chat interface.
+
+### How It Works Autonomously
+
+Once your team is set up, they work on their own:
+
+- **Heartbeats** — Periodic self-checks where each Anima reviews tasks, reads shared channels, and decides what to do next
+- **Cron tasks** — Scheduled jobs defined per Anima
+- **Memory consolidation** — Every night, episodes are distilled into knowledge (like sleep-time learning)
+- **Communication** — Animas coordinate through shared Board channels and direct messages
+
+## Image Generation
+
+AnimaWorks can automatically generate character portraits and 3D models for your Animas. This gives each agent a visual identity in the Dashboard and the 3D Workspace.
+
+### How It Works
+
+1. When a new Anima is created, the **Asset Reconciler** reads the character's identity and generates an image prompt using an LLM
+2. The image is generated via the configured service and saved to `~/.animaworks/animas/{name}/assets/`
+3. If the Anima has a supervisor with an existing portrait, **Vibe Transfer** automatically applies the supervisor's art style — so your whole team looks visually consistent
+4. 3D models can be generated from the 2D portrait for the interactive 3D Workspace
+
+### Setup
+
+Set the API key(s) for your preferred service in `.env`:
+
+```bash
+# Recommended for anime-style character art:
+NOVELAI_API_TOKEN=pst-...
+
+# For Flux-based generation:
+FAL_KEY=...
+
+# For 3D models in the Workspace:
+MESHY_API_KEY=...
+```
+
+Without any image generation keys configured, Animas work perfectly fine — they just won't have visual avatars.
 
 ## API Key Reference
 
@@ -117,134 +207,39 @@ See [API Key Reference](#api-key-reference) below for details.
 | `CHATWORK_API_TOKEN` | Chatwork | [chatwork.com](https://www.chatwork.com/) → Settings > API Token |
 | `OLLAMA_SERVERS` | Ollama (local LLM) | Default: `http://localhost:11434` |
 
-## Image Generation
+## Execution Modes
 
-AnimaWorks can automatically generate character portraits and 3D models for your Animas. This gives each agent a visual identity in the Dashboard and the 3D Workspace.
+Each Anima can use a different LLM model and execution mode. Set via `config.json` per Anima.
 
-### How It Works
+| Mode | Engine | Target Models | Tools |
+|------|--------|--------------|-------|
+| A1 | Claude Agent SDK | Claude models | Read/Write/Edit/Bash/Grep/Glob |
+| A1 Fallback | Anthropic SDK | Claude (when Agent SDK unavailable) | search_memory, read/write_file, etc. |
+| A2 | LiteLLM + tool_use | GPT-4o, Gemini, etc. | search_memory, read/write_file, execute_command, etc. |
+| B | LiteLLM text-based tool loop | Ollama, etc. | Pseudo tool calls (text-parsed JSON) |
 
-1. When a new Anima is created, the **Asset Reconciler** reads the character's identity and generates an image prompt using an LLM
-2. The image is generated via the configured service and saved to `~/.animaworks/animas/{name}/assets/`
-3. If the Anima has a supervisor with an existing portrait, **Vibe Transfer** automatically applies the supervisor's art style — so your whole team looks visually consistent
-4. 3D models can be generated from the 2D portrait for the interactive 3D Workspace
+Mode is determined automatically from the model name. You can also override it in `config.json` under `model_modes`.
 
-### Setup
+## Hierarchy & Roles
 
-Set the API key(s) for your preferred service in `.env`:
+- Hierarchy is defined by a single `supervisor` field. No supervisor = top-level.
+- Role templates apply specialized prompts, permissions, and defaults:
 
-```bash
-# Recommended for anime-style character art:
-NOVELAI_API_TOKEN=pst-...
+| Role | Default Model | Description |
+|------|--------------|-------------|
+| `engineer` | Opus | Complex reasoning, code generation |
+| `manager` | Opus | Coordination, decision-making |
+| `writer` | Sonnet | Content creation |
+| `researcher` | Haiku | Information gathering |
+| `ops` | Local model | Log monitoring, routine tasks |
+| `general` | Sonnet | General-purpose |
 
-# For Flux-based generation:
-FAL_KEY=...
+- All communication (directives, reports, coordination) flows through async messaging via Messenger.
+- Each Anima runs as an isolated subprocess managed by ProcessSupervisor, communicating via Unix Domain Sockets.
 
-# For 3D models in the Workspace:
-MESHY_API_KEY=...
-```
+## CLI Reference (Advanced)
 
-### Regenerating Assets
-
-```bash
-# Regenerate images for a specific Anima
-animaworks optimize-assets alice
-
-# Or use the Web UI's Remake feature for interactive style tuning
-```
-
-Without any image generation keys configured, Animas work perfectly fine — they just won't have visual avatars.
-
-## Create Your First Anima
-
-### Step 1: Write a Character Sheet
-
-Create a Markdown file that describes your Anima. At minimum, you need a name, a role, and some personality:
-
-```markdown
-# Character: Alice
-
-## Basic Info
-
-| Item | Value |
-|------|-------|
-| English Name | alice |
-| Role | Engineer |
-
-## Personality
-
-A curious and methodical engineer who approaches problems with calm precision.
-She values clarity over cleverness, and always explains her reasoning.
-When she doesn't know something, she says so honestly rather than guessing.
-
-## Role & Guidelines
-
-- Manages the project's technical infrastructure
-- Reviews code changes and suggests improvements
-- Writes clear technical documentation
-- Proactively investigates issues she notices during routine checks
-```
-
-### Step 2: Create the Anima
-
-```bash
-animaworks create-anima --from-md alice.md --role engineer --name alice
-```
-
-The `--role` flag applies a preset template (model selection, turn limits, specialized prompts). Available roles: `engineer`, `manager`, `writer`, `researcher`, `ops`, `general`.
-
-### Step 3: Talk to Your Anima
-
-```bash
-# Via CLI
-animaworks chat alice "Hello! What can you help me with?"
-
-# Or open the Web UI and click on Alice
-# http://localhost:18500/
-```
-
-### Step 4: Watch It Work Autonomously
-
-Once started, Alice will:
-
-- Run **heartbeats** — periodic self-checks where she reviews her tasks, reads shared channels, and decides what to do next
-- Execute **cron tasks** — scheduled jobs you define in `~/.animaworks/animas/alice/cron.md`
-- **Consolidate memories** — every night, episodes are distilled into knowledge (like sleep-time learning)
-- **Communicate** with other Animas — through shared Board channels or direct messages
-
-### Adding More Animas
-
-Create a second character sheet and assign a supervisor to build a hierarchy:
-
-```markdown
-# Character: Bob
-
-## Basic Info
-
-| Item | Value |
-|------|-------|
-| English Name | bob |
-| Role | Researcher |
-| Supervisor | alice |
-
-## Personality
-
-An enthusiastic researcher who loves digging into new topics.
-Thorough and detail-oriented, he always cites his sources.
-
-## Role & Guidelines
-
-- Investigates topics assigned by his supervisor
-- Summarizes findings into concise reports
-- Monitors industry news and trends
-```
-
-```bash
-animaworks create-anima --from-md bob.md --role researcher --name bob
-```
-
-Now Alice manages Bob. She can assign tasks, and Bob reports back through the messaging system.
-
-## CLI Reference
+The CLI is available for power users and automation. After initial setup, day-to-day use is through the Web UI.
 
 ### Server Management
 
@@ -260,15 +255,13 @@ Now Alice manages Bob. She can assign tasks, and Bob reports back through the me
 |---|---|
 | `animaworks init` | Initialize runtime directory (interactive setup) |
 | `animaworks init --force` | Merge template updates (preserves existing data) |
-| `animaworks init --from-md PATH [--name NAME]` | Create Anima from Markdown character sheet |
-| `animaworks init --blank NAME` | Create empty Anima skeleton |
 | `animaworks reset [--restart]` | Reset runtime directory |
 
 ### Anima Management
 
 | Command | Description |
 |---|---|
-| `animaworks create-anima [--from-md PATH] [--role ROLE] [--name NAME]` | Create new Anima |
+| `animaworks create-anima [--from-md PATH] [--role ROLE] [--name NAME]` | Create new Anima from character sheet |
 | `animaworks anima status [ANIMA]` | Show Anima process status |
 | `animaworks anima restart ANIMA` | Restart Anima process |
 | `animaworks list` | List all Animas |
@@ -290,66 +283,6 @@ Now Alice manages Bob. She can assign tasks, and Bob reports back through the me
 | `animaworks config set KEY VALUE` | Set config value |
 | `animaworks status` | Show system status |
 | `animaworks logs [ANIMA] [--lines N]` | View logs |
-
-## Execution Modes
-
-Each Anima can use a different LLM model and execution mode. Set via `config.json` per Anima.
-
-| Mode | Engine | Target Models | Tools |
-|------|--------|--------------|-------|
-| A1 | Claude Agent SDK | Claude models | Read/Write/Edit/Bash/Grep/Glob |
-| A1 Fallback | Anthropic SDK | Claude (when Agent SDK unavailable) | search_memory, read/write_file, etc. |
-| A2 | LiteLLM + tool_use | GPT-4o, Gemini, etc. | search_memory, read/write_file, execute_command, etc. |
-| B | LiteLLM text-based tool loop | Ollama, etc. | Pseudo tool calls (text-parsed JSON) |
-
-Mode is determined automatically from the model name. You can also override it in `config.json` under `model_modes`.
-
-## Hierarchy & Roles
-
-- Hierarchy is defined by a single `supervisor` field. No supervisor = top-level.
-- Role templates (`--role`) apply specialized prompts, permissions, and defaults:
-
-| Role | Default Model | Description |
-|------|--------------|-------------|
-| `engineer` | Opus | Complex reasoning, code generation |
-| `manager` | Opus | Coordination, decision-making |
-| `writer` | Sonnet | Content creation |
-| `researcher` | Haiku | Information gathering |
-| `ops` | Local model | Log monitoring, routine tasks |
-| `general` | Sonnet | General-purpose |
-
-- All communication (directives, reports, coordination) flows through async messaging via Messenger.
-- Each Anima runs as an isolated subprocess managed by ProcessSupervisor, communicating via Unix Domain Sockets.
-
-## Web UI
-
-- `http://localhost:18500/` — Dashboard (Anima status, activity timeline, configuration)
-- `http://localhost:18500/workspace/` — Interactive Workspace (3D office, chat interface)
-
-## Adding an Anima
-
-One Anima = one directory. Place Markdown files in `~/.animaworks/animas/{name}/`:
-
-```
-animas/alice/
-├── identity.md          # Personality and expertise (immutable)
-├── injection.md         # Role, values, behavioral rules (replaceable)
-├── permissions.md       # Tool/file permissions
-├── heartbeat.md         # Periodic check schedule
-├── cron.md              # Scheduled tasks (YAML)
-├── bootstrap.md         # First-run self-setup instructions
-├── status.json          # Enabled/disabled, role, model config
-├── specialty_prompt.md  # Role-specific expert prompt
-├── assets/              # Character images, 3D models
-├── activity_log/        # Unified activity log (daily JSONL)
-└── skills/              # Skills (YAML frontmatter + Markdown)
-```
-
-Or create from a Markdown character sheet:
-
-```bash
-animaworks create-anima --from-md character_sheet.md --role engineer --name alice
-```
 
 ## Tech Stack
 
