@@ -13,10 +13,8 @@ from pathlib import Path
 from typing import Any
 
 from core.memory import MemoryManager
-from core.memory.manager import match_skills_by_description
 from core.paths import PROJECT_DIR, get_data_dir, load_prompt
 from core.memory.shortterm import ShortTermMemory
-from core.schemas import SkillMeta
 from core.time_utils import now_jst
 
 logger = logging.getLogger("animaworks.prompt_builder")
@@ -62,52 +60,7 @@ class BuildResult:
         return self.system_prompt.count(sub, *args)
 
 
-# ── Skill Injection Budget ────────────────────────────────
-
-SKILL_INJECTION_BUDGET: dict[str, int] = {
-    "greeting": 1000,
-    "question": 3000,
-    "request": 5000,
-    "heartbeat": 2000,
-}
-
 _CURRENT_TASK_MAX_CHARS = 3000
-
-
-def _classify_message_for_skill_budget(message: str) -> str:
-    """Classify message type for skill injection budget."""
-    if not message:
-        return "question"  # default
-    msg_lower = message.lower()
-
-    greeting_patterns = [
-        "こんにちは", "おはよう", "こんばんは", "よろしく",
-        "hello", "hi ", "hey", "good morning", "good evening",
-    ]
-    if any(p in msg_lower for p in greeting_patterns) and len(message) < 50:
-        return "greeting"
-
-    if len(message) > 100:
-        return "request"
-
-    question_patterns = [
-        "?", "？", "教えて", "どう", "なぜ", "いつ", "どこ", "誰",
-        "what", "why", "when", "where", "who", "how", "can you",
-    ]
-    if any(p in msg_lower for p in question_patterns):
-        return "question"
-
-    return "request"
-
-
-def _build_skill_body(path: Path) -> str:
-    """Read a skill file and return its body (after frontmatter)."""
-    text = path.read_text(encoding="utf-8")
-    if text.startswith("---"):
-        parts = text.split("---", 2)
-        if len(parts) >= 3:
-            return parts[2].strip()
-    return text.strip()
 
 # ── Emotion Instruction ───────────────────────────────────
 
@@ -344,23 +297,7 @@ def build_system_prompt(
     # Skill/procedure metadata needed by Group 4
     skill_metas = memory.list_skill_metas()
     common_skill_metas = memory.list_common_skill_metas()
-    all_metas = skill_metas + common_skill_metas
     procedure_metas = memory.list_procedure_metas()
-    anima_name = memory.anima_dir.name if hasattr(memory, "anima_dir") else ""
-    all_metas_with_procedures = all_metas + procedure_metas
-    # Skill matching only for user-originated messages
-    if trigger.startswith("heartbeat") or trigger.startswith("cron"):
-        matched_skills: list[SkillMeta] = []
-    else:
-        matched_skills = match_skills_by_description(
-            message, all_metas_with_procedures, retriever=retriever, anima_name=anima_name,
-        )
-    matched_names: set[str] = set()
-    msg_type = _classify_message_for_skill_budget(message)
-    budget = SKILL_INJECTION_BUDGET.get(msg_type, 3000)
-    used_tokens = 0
-    injected_procedure_paths: list[Path] = []
-    procedure_name_set = {m.name for m in procedure_metas}
 
     # Read permissions early (needed by Group 2 and Group 4 external tools check)
     permissions = memory.read_permissions()
@@ -489,72 +426,18 @@ def build_system_prompt(
     if common_knowledge_dir.exists() and any(common_knowledge_dir.rglob("*.md")):
         parts.append(load_prompt("builder/common_knowledge_hint"))
 
-    # Inject matched skill/procedure full text (within budget)
-    for skill in matched_skills:
-        body = _build_skill_body(skill.path)
-        body_len = len(body)
-        if used_tokens + body_len > budget:
-            break
-        is_procedure = skill.name in procedure_name_set
-        if is_procedure:
-            label = "(手順)"
-            injected_procedure_paths.append(skill.path)
-        elif skill.is_common:
-            label = "(共通スキル)"
-        else:
-            label = "(個人スキル)"
-        section_title = "手順" if is_procedure else "スキル"
-        parts.append(load_prompt(
-            "builder/skill_injection",
-            section_title=section_title,
-            skill_name=skill.name,
-            label=label,
-            body=body,
-        ))
-        matched_names.add(skill.name)
-        used_tokens += body_len
-
-    # Non-matched personal skills → table
-    unmatched_personal = [
-        m for m in skill_metas if m.name not in matched_names
-    ]
-    if unmatched_personal:
-        skill_lines = "\n".join(
-            f"| {m.name} | {m.description} |" for m in unmatched_personal
-        )
-        parts.append(load_prompt(
-            "skills_guide",
-            anima_dir=pd,
-            skill_lines=skill_lines,
-        ))
-
-    # Non-matched common skills → table
-    unmatched_common = [
-        m for m in common_skill_metas if m.name not in matched_names
-    ]
-    if unmatched_common:
-        common_skill_lines = "\n".join(
-            f"| {m.name} | {m.description} |" for m in unmatched_common
-        )
-        common_skills_dir = memory.common_skills_dir
-        parts.append(load_prompt(
-            "builder/common_skills_header",
-            common_skills_dir=common_skills_dir,
-            common_skill_lines=common_skill_lines,
-        ))
-
-    # Non-matched procedures → table
-    unmatched_procedures = [
-        m for m in procedure_metas if m.name not in matched_names
-    ]
-    if unmatched_procedures:
-        proc_lines = "\n".join(
-            f"| {m.name} | {m.description} |" for m in unmatched_procedures
-        )
-        parts.append(load_prompt(
-            "builder/procedures_header",
-            proc_lines=proc_lines,
-        ))
+    # Unified skills/procedures table
+    rows: list[str] = []
+    for m in skill_metas:
+        rows.append(f"| {m.name} | 個人 | {m.description} |")
+    for m in common_skill_metas:
+        rows.append(f"| {m.name} | 共通 | {m.description} |")
+    for m in procedure_metas:
+        rows.append(f"| {m.name} | 手順 | {m.description} |")
+    if rows:
+        table_header = "| 名前 | 種別 | 概要 |\n|------|------|------|\n"
+        table = table_header + "\n".join(rows)
+        parts.append(load_prompt("skills_guide") + "\n\n" + table)
 
     # External tools guide (filtered by registry)
     if permissions and "外部ツール" in permissions and (tool_registry or personal_tools):
@@ -620,7 +503,6 @@ def build_system_prompt(
     )
     return BuildResult(
         system_prompt=prompt,
-        injected_procedures=injected_procedure_paths,
     )
 
 

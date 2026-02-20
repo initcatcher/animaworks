@@ -63,9 +63,8 @@ _MAX_STORED_CONTENT_CHARS = 3000
 _CHARS_PER_TOKEN = 4
 
 # Maximum number of turns to include in the chat prompt.
-# Industry standard is 10 (JetBrains NeurIPS 2025); 20 provides headroom
-# for manager-role Animas with frequent heartbeat + chat turns.
-_MAX_DISPLAY_TURNS = 20
+# Industry standard is 10 (JetBrains NeurIPS 2025).
+_MAX_DISPLAY_TURNS = 10
 
 # Trigger compression when stored turns exceed this count,
 # regardless of token estimate.  Prevents conversation.json bloat
