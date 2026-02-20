@@ -481,7 +481,14 @@ class AgentCore:
             if not hasattr(self, "_priming_engine"):
                 from core.paths import get_shared_dir
                 self._priming_engine = PrimingEngine(self.anima_dir, get_shared_dir())
-            result = await self._priming_engine.prime_memories(message, sender_name)
+            channel = (
+                "heartbeat" if trigger == "heartbeat"
+                else "cron" if trigger.startswith("cron")
+                else "chat"
+            )
+            result = await self._priming_engine.prime_memories(
+                message, sender_name, channel=channel,
+            )
 
             if result.is_empty():
                 logger.debug("Priming: No memories found")
@@ -571,6 +578,7 @@ class AgentCore:
         priming_section: str,
         mode: str,
         message: str,
+        trigger: str = "",
     ) -> tuple[str, str, bool]:
         """Check combined prompt size and shrink if necessary.
 
@@ -605,6 +613,7 @@ class AgentCore:
                     execution_mode=mode,
                     message=prompt,
                     retriever=self._get_retriever(),
+                    trigger=trigger,
                 ).system_prompt
             except Exception:
                 logger.exception("Forced compression failed")
@@ -688,6 +697,7 @@ class AgentCore:
             execution_mode=mode,
             message=prompt,
             retriever=self._get_retriever(),
+            trigger=trigger,
         )
         system_prompt = build_result.system_prompt
         injected_procedures = build_result.injected_procedures
@@ -770,6 +780,7 @@ class AgentCore:
             priming_section=priming_section,
             mode=mode,
             message=prompt,
+            trigger=trigger,
         )
         if use_fallback:
             executor = self._create_fallback_executor()
@@ -834,6 +845,7 @@ class AgentCore:
                     execution_mode=mode,
                     message=prompt,
                     retriever=self._get_retriever(),
+                    trigger=trigger,
                 ).system_prompt,
                 shortterm,
             )
@@ -927,6 +939,7 @@ class AgentCore:
             execution_mode=mode,
             message=prompt,
             retriever=self._get_retriever(),
+            trigger=trigger,
         )
         system_prompt = build_result.system_prompt
         # Persist injected procedures for heartbeat-triggered finalization
@@ -948,6 +961,7 @@ class AgentCore:
             priming_section=priming_section,
             mode=mode,
             message=prompt,
+            trigger=trigger,
         )
         if use_fallback:
             # Fall back to non-streaming execution
@@ -1093,6 +1107,7 @@ class AgentCore:
                     execution_mode=mode,
                     message=prompt,
                     retriever=self._get_retriever(),
+                    trigger=trigger,
                 ).system_prompt
 
                 await asyncio.sleep(retry_delay)
@@ -1146,6 +1161,7 @@ class AgentCore:
                     execution_mode=mode,
                     message=prompt,
                     retriever=self._get_retriever(),
+                    trigger=trigger,
                 ).system_prompt,
                 shortterm,
             )

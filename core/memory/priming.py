@@ -160,7 +160,7 @@ class PrimingEngine:
             self._channel_a_sender_profile(sender_name),
             self._channel_b_recent_activity(sender_name, keywords),  # Unified channel
             self._channel_c_related_knowledge(keywords),
-            self._channel_d_skill_match(message, keywords),
+            self._channel_d_skill_match(message, keywords, channel=channel),
             self._channel_e_pending_tasks(),
             return_exceptions=True,
         )
@@ -629,6 +629,7 @@ class PrimingEngine:
 
     async def _channel_d_skill_match(
         self, message: str, keywords: list[str],
+        channel: str = "chat",
     ) -> list[str]:
         """Channel D: Skill matching via description-based 3-tier search.
 
@@ -639,8 +640,12 @@ class PrimingEngine:
 
         Returns list of skill/procedure names (not full content, max 5).
         Searches personal skills/, common_skills/, and procedures/.
+        Skipped for heartbeat/cron triggers to avoid false positives.
         """
         _MAX_SKILL_MATCHES = 5
+
+        if channel in ("heartbeat", "cron"):
+            return []
 
         if not message and not keywords:
             return []

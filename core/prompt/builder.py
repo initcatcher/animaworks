@@ -319,6 +319,8 @@ def build_system_prompt(
     execution_mode: str = "a1",
     message: str = "",
     retriever: object | None = None,
+    *,
+    trigger: str = "",
 ) -> BuildResult:
     """Construct the full system prompt from Markdown files.
 
@@ -346,9 +348,13 @@ def build_system_prompt(
     procedure_metas = memory.list_procedure_metas()
     anima_name = memory.anima_dir.name if hasattr(memory, "anima_dir") else ""
     all_metas_with_procedures = all_metas + procedure_metas
-    matched_skills = match_skills_by_description(
-        message, all_metas_with_procedures, retriever=retriever, anima_name=anima_name,
-    )
+    # Skill matching only for user-originated messages
+    if trigger.startswith("heartbeat") or trigger.startswith("cron"):
+        matched_skills: list[SkillMeta] = []
+    else:
+        matched_skills = match_skills_by_description(
+            message, all_metas_with_procedures, retriever=retriever, anima_name=anima_name,
+        )
     matched_names: set[str] = set()
     msg_type = _classify_message_for_skill_budget(message)
     budget = SKILL_INJECTION_BUDGET.get(msg_type, 3000)
