@@ -222,6 +222,15 @@ def _validate_procedure_format(content: str) -> str:
     return "\n".join(messages)
 
 
+def _extract_first_heading(text: str) -> str:
+    """Extract the first Markdown heading as description."""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("# "):
+            return stripped.lstrip("# ").strip()
+    return ""
+
+
 def _is_protected_write(anima_dir: Path, target: Path) -> str | None:
     """Check if a write target is a protected file or outside anima_dir.
 
@@ -512,12 +521,28 @@ class ToolHandler:
                     "ツール作成が許可されていません。permissions.md に「ツール作成」セクションを追加してください。",
                 )
 
+        content = args["content"]
+        mode = args.get("mode", "overwrite")
+
         path.parent.mkdir(parents=True, exist_ok=True)
-        if args.get("mode") == "append":
+
+        # Auto-add YAML frontmatter for procedure overwrite writes
+        if (rel.startswith("procedures/") and rel.endswith(".md")
+                and mode == "overwrite"
+                and not content.lstrip().startswith("---")):
+            desc = _extract_first_heading(content)
+            metadata = {
+                "description": desc,
+                "success_count": 0,
+                "failure_count": 0,
+                "confidence": 0.5,
+            }
+            self._memory.write_procedure_with_meta(path, content, metadata)
+        elif mode == "append":
             with open(path, "a", encoding="utf-8") as f:
-                f.write(args["content"])
+                f.write(content)
         else:
-            path.write_text(args["content"], encoding="utf-8")
+            path.write_text(content, encoding="utf-8")
         logger.info(
             "write_memory_file path=%s mode=%s",
             args["path"], args.get("mode", "overwrite"),
