@@ -383,6 +383,7 @@ class DigitalAnima:
         from_person: str = "human",
         images: list[dict[str, Any]] | None = None,
         attachment_paths: list[str] | None = None,
+        intent: str = "",
     ) -> str:
         logger.info(
             "[%s] process_message WAITING from=%s content_len=%d images=%d",
@@ -415,6 +416,7 @@ class DigitalAnima:
                 try:
                     result = await self.agent.run_cycle(
                         prompt, trigger=f"message:{from_person}",
+                        message_intent=intent,
                         images=images,
                     )
                     self._last_activity = now_jst()
@@ -458,6 +460,7 @@ class DigitalAnima:
         from_person: str = "human",
         images: list[dict[str, Any]] | None = None,
         attachment_paths: list[str] | None = None,
+        intent: str = "",
     ) -> AsyncGenerator[dict, None]:
         """Streaming version of process_message.
 
@@ -559,6 +562,7 @@ class DigitalAnima:
                 try:
                     async for chunk in self.agent.run_cycle_streaming(
                         prompt, trigger=f"message:{from_person}",
+                        message_intent=intent,
                         images=images,
                     ):
                         if chunk.get("type") == "text_delta":

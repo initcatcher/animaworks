@@ -456,7 +456,7 @@ class AgentCore:
             return None
         return getattr(engine, "_retriever", None)
 
-    async def _run_priming(self, prompt: str, trigger: str) -> str:
+    async def _run_priming(self, prompt: str, trigger: str, *, message_intent: str = "") -> str:
         """Run priming layer to automatically retrieve relevant memories.
 
         Args:
@@ -481,7 +481,11 @@ class AgentCore:
             if not hasattr(self, "_priming_engine"):
                 from core.paths import get_shared_dir
                 self._priming_engine = PrimingEngine(self.anima_dir, get_shared_dir())
-            result = await self._priming_engine.prime_memories(message, sender_name)
+            result = await self._priming_engine.prime_memories(
+                message,
+                sender_name,
+                intent=message_intent,
+            )
 
             if result.is_empty():
                 logger.debug("Priming: No memories found")
@@ -642,6 +646,7 @@ class AgentCore:
         prompt: str,
         trigger: str = "manual",
         images: list[dict[str, Any]] | None = None,
+        message_intent: str = "",
     ) -> CycleResult:
         """Run one agent cycle with autonomous memory search.
 
@@ -654,13 +659,19 @@ class AgentCore:
         externalized to short-term memory and automatically continued.
         """
         async with self._agent_lock:
-            return await self._run_cycle_inner(prompt, trigger, images=images)
+            return await self._run_cycle_inner(
+                prompt,
+                trigger,
+                message_intent=message_intent,
+                images=images,
+            )
 
     async def _run_cycle_inner(
         self,
         prompt: str,
         trigger: str,
         images: list[dict[str, Any]] | None = None,
+        message_intent: str = "",
     ) -> CycleResult:
         start = time.monotonic()
         mode = self._resolve_execution_mode()
@@ -670,7 +681,11 @@ class AgentCore:
         )
 
         # ── Priming: Automatic memory retrieval ────────────────
-        priming_section = await self._run_priming(prompt, trigger)
+        priming_section = await self._run_priming(
+            prompt,
+            trigger,
+            message_intent=message_intent,
+        )
 
         shortterm = ShortTermMemory(self.anima_dir)
         tracker = ContextTracker(
@@ -882,6 +897,7 @@ class AgentCore:
         prompt: str,
         trigger: str = "manual",
         images: list[dict[str, Any]] | None = None,
+        message_intent: str = "",
     ) -> AsyncGenerator[dict, None]:
         """Streaming version of run_cycle.
 
@@ -899,7 +915,10 @@ class AgentCore:
         if not self._executor.supports_streaming:
             async with self._agent_lock:
                 cycle = await self._run_cycle_inner(
-                    prompt, trigger, images=images,
+                    prompt,
+                    trigger,
+                    message_intent=message_intent,
+                    images=images,
                 )
             yield {"type": "text_delta", "text": cycle.summary}
             yield {
@@ -910,7 +929,11 @@ class AgentCore:
 
         # ── Streaming executor (A1 / A2 / all modes) ─────────────
         # Priming: Automatic memory retrieval
-        priming_section = await self._run_priming(prompt, trigger)
+        priming_section = await self._run_priming(
+            prompt,
+            trigger,
+            message_intent=message_intent,
+        )
 
         shortterm = ShortTermMemory(self.anima_dir)
         tracker = ContextTracker(
@@ -953,7 +976,12 @@ class AgentCore:
             # Fall back to non-streaming execution
             logger.warning("Streaming fallback: using blocking A1 Fallback for oversized prompt")
             async with self._agent_lock:
-                cycle = await self._run_cycle_inner(prompt, trigger, images=images)
+                cycle = await self._run_cycle_inner(
+                    prompt,
+                    trigger,
+                    message_intent=message_intent,
+                    images=images,
+                )
             yield {"type": "text_delta", "text": cycle.summary}
             yield {
                 "type": "cycle_done",
