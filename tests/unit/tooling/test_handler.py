@@ -93,7 +93,7 @@ class TestProperties:
         alice_dir = anima_dir.parent / "alice"
         alice_dir.mkdir(exist_ok=True)
         with patch("core.paths.get_animas_dir", return_value=anima_dir.parent):
-            h.handle("send_message", {"to": "alice", "content": "hi"})
+            h.handle("send_message", {"to": "alice", "content": "hi", "intent": "report"})
         assert "alice" in h.replied_to
         h.reset_replied_to()
         assert h.replied_to == set()
@@ -186,7 +186,7 @@ class TestHandleRouting:
         alice_dir.mkdir(exist_ok=True)
         with patch("core.paths.get_animas_dir", return_value=anima_dir.parent):
             result = handler_with_messenger.handle(
-                "send_message", {"to": "alice", "content": "hello"},
+                "send_message", {"to": "alice", "content": "hello", "intent": "report"},
             )
         assert "Message sent to alice" in result
         assert "alice" in handler_with_messenger.replied_to
@@ -205,32 +205,34 @@ class TestHandleRouting:
             to="alice", content="hello", thread_id="", reply_to="", intent="delegation",
         )
 
-    def test_send_message_intent_default_empty(
+    def test_send_message_intent_empty_returns_error(
         self, handler_with_messenger: ToolHandler, anima_dir: Path,
     ):
+        """Empty intent (no intent provided) is rejected by the new DM restriction."""
         alice_dir = anima_dir.parent / "alice"
         alice_dir.mkdir(exist_ok=True)
         with patch("core.paths.get_animas_dir", return_value=anima_dir.parent):
-            handler_with_messenger.handle(
+            result = handler_with_messenger.handle(
                 "send_message", {"to": "alice", "content": "hello"},
             )
-        handler_with_messenger._messenger.send.assert_called_once_with(
-            to="alice", content="hello", thread_id="", reply_to="", intent="",
-        )
+        assert "Error" in result
+        assert "intent" in result
+        handler_with_messenger._messenger.send.assert_not_called()
 
-    def test_send_message_intent_truncated_at_50(
+    def test_send_message_invalid_intent_returns_error(
         self, handler_with_messenger: ToolHandler, anima_dir: Path,
     ):
+        """Intent that is not 'report' or 'delegation' is rejected."""
         alice_dir = anima_dir.parent / "alice"
         alice_dir.mkdir(exist_ok=True)
         long_intent = "x" * 100
         with patch("core.paths.get_animas_dir", return_value=anima_dir.parent):
-            handler_with_messenger.handle(
+            result = handler_with_messenger.handle(
                 "send_message", {"to": "alice", "content": "hello", "intent": long_intent},
             )
-        handler_with_messenger._messenger.send.assert_called_once_with(
-            to="alice", content="hello", thread_id="", reply_to="", intent="x" * 50,
-        )
+        assert "Error" in result
+        assert "intent" in result
+        handler_with_messenger._messenger.send.assert_not_called()
 
     def test_send_message_calls_on_message_sent(
         self, handler_with_messenger: ToolHandler, anima_dir: Path,
@@ -241,7 +243,7 @@ class TestHandleRouting:
         alice_dir.mkdir(exist_ok=True)
         with patch("core.paths.get_animas_dir", return_value=anima_dir.parent):
             handler_with_messenger.handle(
-                "send_message", {"to": "alice", "content": "hello"},
+                "send_message", {"to": "alice", "content": "hello", "intent": "report"},
             )
         callback.assert_called_once_with("test-anima", "alice", "hello")
 
@@ -255,7 +257,7 @@ class TestHandleRouting:
         with patch("core.paths.get_animas_dir", return_value=anima_dir.parent):
             # Should not raise
             result = handler_with_messenger.handle(
-                "send_message", {"to": "alice", "content": "hello"},
+                "send_message", {"to": "alice", "content": "hello", "intent": "report"},
             )
         assert "Message sent" in result
 

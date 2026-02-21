@@ -236,6 +236,7 @@ class BackgroundTaskConfig(BaseModel):
 class HeartbeatConfig(BaseModel):
     """Heartbeat scheduling and cascade prevention settings."""
 
+    interval_minutes: int = 30  # heartbeat interval (config-driven, not parsed from heartbeat.md)
     msg_heartbeat_cooldown_s: int = 300  # message-triggered heartbeat cooldown
     cascade_window_s: int = 1800  # sliding window for cascade detection
     cascade_threshold: int = 3  # max round-trips per pair within window
