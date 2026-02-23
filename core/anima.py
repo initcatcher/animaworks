@@ -1472,10 +1472,12 @@ class DigitalAnima:
             "[%s] run_consolidation START type=%s max_turns=%d",
             self.name, consolidation_type, max_turns,
         )
+        from core.tooling.handler import active_session_type
         try:
             async with self._background_lock:
                 self._status_slots["background"] = "consolidating"
                 self._task_slots["background"] = f"Memory consolidation ({consolidation_type})"
+                _session_token = self.agent._tool_handler.set_active_session_type("background")
 
                 try:
                     # Build consolidation prompt
@@ -1539,6 +1541,7 @@ class DigitalAnima:
                     )
                     raise
                 finally:
+                    active_session_type.reset(_session_token)
                     self._status_slots["background"] = "idle"
                     self._task_slots["background"] = ""
         finally:
@@ -1548,10 +1551,12 @@ class DigitalAnima:
         self, task_name: str, description: str
     ) -> CycleResult:
         logger.info("[%s] run_cron_task START task=%s", self.name, task_name)
+        from core.tooling.handler import active_session_type
         try:
             async with self._background_lock:
                 self._status_slots["background"] = "working"
                 self._task_slots["background"] = task_name
+                _session_token = self.agent._tool_handler.set_active_session_type("background")
 
                 prompt = load_prompt(
                     "cron_task", task_name=task_name, description=description
@@ -1598,10 +1603,12 @@ class DigitalAnima:
                     )
                     raise
                 finally:
+                    active_session_type.reset(_session_token)
                     self._status_slots["background"] = "idle"
                     self._task_slots["background"] = ""
         finally:
             self._notify_lock_released()
+
     async def run_cron_command(
         self,
         task_name: str,
@@ -1630,10 +1637,12 @@ class DigitalAnima:
         stderr = ""
         exit_code = 0
 
+        from core.tooling.handler import active_session_type
         try:
             async with self._background_lock:
                 self._status_slots["background"] = "working"
                 self._task_slots["background"] = task_name
+                _session_token = self.agent._tool_handler.set_active_session_type("background")
 
                 try:
                     if command:
@@ -1675,6 +1684,7 @@ class DigitalAnima:
                         meta={"phase": "run_cron_command", "error": str(exc)[:200]},
                     )
                 finally:
+                    active_session_type.reset(_session_token)
                     self._status_slots["background"] = "idle"
                     self._task_slots["background"] = ""
 

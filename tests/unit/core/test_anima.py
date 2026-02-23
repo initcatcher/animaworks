@@ -308,7 +308,9 @@ class TestRunCronTask:
             MockMM.return_value.read_model_config.return_value = MagicMock()
 
             from core.anima import DigitalAnima
+            from core.tooling.handler import active_session_type
             dp = DigitalAnima(anima_dir, shared_dir)
+            dp.agent._tool_handler.set_active_session_type = lambda st: active_session_type.set(st)
             dp.agent.run_cycle = AsyncMock(return_value=_make_cycle_result())
 
             result = await dp.run_cron_task("daily_report", "Generate report")
