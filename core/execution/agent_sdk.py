@@ -570,6 +570,43 @@ def _build_pre_tool_hook(
     return _pre_tool_hook
 
 
+def _build_pre_compact_hook(anima_dir: Path) -> "Callable":
+    """Build a PreCompact hook that logs whenever SDK auto-compact fires.
+
+    This hook is called by the Claude Code subprocess before it summarises and
+    compresses the conversation history.  We record the event to the activity
+    log so that compaction history is visible in the Anima's timeline.
+    """
+    from claude_agent_sdk.types import HookContext, SyncHookJSONOutput
+
+    async def _pre_compact_hook(
+        input_data: dict,
+        tool_use_id: str | None,
+        context: HookContext,
+    ) -> SyncHookJSONOutput:
+        trigger = input_data.get("trigger", "unknown")
+        logger.info(
+            "SDK auto-compact triggered: trigger=%s anima=%s",
+            trigger,
+            anima_dir.name,
+        )
+        # Record to activity log for observability
+        try:
+            from core.memory.activity import ActivityLogger
+            activity = ActivityLogger(anima_dir)
+            await activity.log(
+                event_type="tool_use",
+                content=f"SDK context compaction ({trigger})",
+                summary=f"auto-compact:{trigger}",
+                meta={"trigger": trigger},
+            )
+        except Exception:
+            logger.debug("Failed to write compaction activity log", exc_info=True)
+        return SyncHookJSONOutput()
+
+    return _pre_compact_hook
+
+
 # ── Common tool record helpers ───────────────────────────────
 
 
@@ -810,6 +847,10 @@ class AgentSDKExecutor(BaseExecutor):
                         context_window=_cw,
                         session_stats=session_stats,
                     )],
+                )],
+                "PreCompact": [HookMatcher(
+                    matcher=".*",
+                    hooks=[_build_pre_compact_hook(self._anima_dir)],
                 )],
             },
         )
@@ -1109,7 +1150,16 @@ class AgentSDKExecutor(BaseExecutor):
                     event = message.event
                     event_type = event.get("type", "")
 
-                    if event_type == "content_block_start":
+                    if event_type == "message_start":
+                        # Accurate per-turn context size (input + cache tokens).
+                        # This is the authoritative source for threshold tracking
+                        # in S mode — unlike ResultMessage.usage which is a
+                        # cumulative sum across all turns.
+                        usage = event.get("message", {}).get("usage", {})
+                        if usage:
+                            tracker.update_from_message_start(usage)
+
+                    elif event_type == "content_block_start":
                         block = event.get("content_block", {})
                         if block.get("type") == "tool_use":
                             tool_id = block.get("id", "")
@@ -1167,7 +1217,11 @@ class AgentSDKExecutor(BaseExecutor):
                     result_message = message
                     if message.session_id:
                         _save_session_id(self._anima_dir, message.session_id, session_type)
-                    tracker.update_from_result_message(message.usage)
+                    # Do NOT call tracker.update_from_result_message() here.
+                    # ResultMessage.usage.input_tokens is a cumulative sum across
+                    # all turns (not the current context size) and would
+                    # produce inaccurate threshold checks.  Context tracking is
+                    # handled per-turn via message_start events above.
                     break  # receive_messages() does not auto-stop on ResultMessage
 
                 elif isinstance(message, SystemMessage):
