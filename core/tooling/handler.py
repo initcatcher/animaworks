@@ -609,20 +609,30 @@ class ToolHandler:
 
     def _handle_write_memory_file(self, args: dict[str, Any]) -> str:
         rel = args["path"]
-        path = self._anima_dir / rel
+
+        # Support common_knowledge/ prefix — resolve to shared dir
+        if rel.startswith("common_knowledge/"):
+            from core.paths import get_common_knowledge_dir
+
+            suffix = rel[len("common_knowledge/"):]
+            path = get_common_knowledge_dir() / suffix
+        else:
+            path = self._anima_dir / rel
 
         # Security check: block protected files and path traversal
-        err = _is_protected_write(self._anima_dir, path)
-        if err:
-            # Before denying, check if this is a subordinate's cron.md/heartbeat.md
-            resolved = path.resolve()
-            subordinate_allowed = False
-            for mgmt_file in self._subordinate_management_files:
-                if resolved == mgmt_file:
-                    subordinate_allowed = True
-                    break
-            if not subordinate_allowed:
-                return err
+        # (common_knowledge writes skip anima_dir containment check)
+        if not rel.startswith("common_knowledge/"):
+            err = _is_protected_write(self._anima_dir, path)
+            if err:
+                # Before denying, check if this is a subordinate's cron.md/heartbeat.md
+                resolved = path.resolve()
+                subordinate_allowed = False
+                for mgmt_file in self._subordinate_management_files:
+                    if resolved == mgmt_file:
+                        subordinate_allowed = True
+                        break
+                if not subordinate_allowed:
+                    return err
 
         # Tool creation permission check
         if rel.startswith("tools/") and rel.endswith(".py"):
