@@ -266,8 +266,8 @@ class TestCreateFromMdResearcherRole:
         status = json.loads(
             (anima_dir / "status.json").read_text(encoding="utf-8")
         )
-        # researcher defaults.json specifies haiku model
-        assert status["model"] == "claude-haiku-3.5-20241022"
+        # researcher defaults.json specifies sonnet model
+        assert status["model"] == "claude-sonnet-4-6"
         assert status["max_turns"] == 30
         assert status["max_chains"] == 2
         assert status["context_threshold"] == 0.50

@@ -84,10 +84,15 @@ class AnimaModelConfig(BaseModel):
     llm_timeout: int | None = None  # LLM API timeout (seconds); None = auto
 
 
+# ── Default model names (single source of truth) ─────────────────────────────
+DEFAULT_ANIMA_MODEL: str = "claude-sonnet-4-6"
+DEFAULT_CONSOLIDATION_MODEL: str = f"anthropic/{DEFAULT_ANIMA_MODEL}"
+
+
 class AnimaDefaults(BaseModel):
     """Concrete defaults applied when a per-anima field is None."""
 
-    model: str = "claude-sonnet-4-6"
+    model: str = DEFAULT_ANIMA_MODEL
     fallback_model: str | None = None
     max_tokens: int = 4096
     max_turns: int = 20
@@ -133,7 +138,7 @@ class ConsolidationConfig(BaseModel):
     daily_enabled: bool = True
     daily_time: str = "02:00"  # Format: HH:MM
     min_episodes_threshold: int = 1
-    llm_model: str = "anthropic/claude-sonnet-4-6"
+    llm_model: str = DEFAULT_CONSOLIDATION_MODEL
     max_turns: int = 30  # Tool-call loop limit for consolidation tasks
     weekly_enabled: bool = True  # Phase 3 implementation
     weekly_time: str = "sun:03:00"  # Format: day:HH:MM
@@ -879,7 +884,7 @@ def resolve_context_window(
          defaults)
 
     Args:
-        model_name: The model name to resolve (e.g. ``"claude-sonnet-4-20250514"``).
+        model_name: The model name to resolve (e.g. ``"claude-sonnet-4-6"``).
         config: Optional config instance.  Loaded lazily if not provided.
 
     Returns:
