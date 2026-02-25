@@ -80,14 +80,13 @@ class TestOrgTreeE2E:
 
 
 class TestOrphanDetectionE2E:
-    """E2E: Orphan detection finds incomplete directories and notifies."""
+    """E2E: Orphan detection auto-cleans trivial orphans and logs non-trivial."""
 
-    def test_detect_and_notify_orphan(self, data_dir, make_anima):
-        """Full detection + notification flow for an orphan directory."""
+    def test_nontrivial_orphan_logged_with_marker(self, data_dir, make_anima):
+        """Non-trivial orphan is logged and gets a .orphan_notified marker."""
         make_anima("sakura")
         make_anima("rin", supervisor="sakura")
 
-        # Create an orphan (no identity.md, has status.json with supervisor)
         orphan_dir = data_dir / "animas" / "rie"
         orphan_dir.mkdir()
         (orphan_dir / "state").mkdir()
@@ -103,24 +102,24 @@ class TestOrphanDetectionE2E:
 
         assert len(orphans) == 1
         assert orphans[0]["name"] == "rie"
-        assert orphans[0]["supervisor"] == "rin"
+        assert orphans[0]["action"] == "logged"
 
-        # Notification marker should be created
         assert (orphan_dir / ".orphan_notified").exists()
 
-        # Second run should skip the already-notified orphan
+        # Second run should skip the already-logged orphan
         orphans2 = detect_orphan_animas(
             data_dir / "animas", data_dir / "shared", age_threshold_s=0
         )
         assert orphans2 == []
 
-    def test_orphan_notification_reaches_inbox(self, data_dir, make_anima):
-        """Orphan notification should create a message file in the supervisor's inbox."""
+    def test_no_inbox_message_sent(self, data_dir, make_anima):
+        """Orphan detection must NOT send messages to any Anima's inbox."""
         make_anima("sakura")
         make_anima("rin", supervisor="sakura")
 
         orphan_dir = data_dir / "animas" / "rie"
         orphan_dir.mkdir()
+        (orphan_dir / "state").mkdir()
         (orphan_dir / "status.json").write_text(
             json.dumps({"supervisor": "rin"}), encoding="utf-8"
         )
@@ -132,17 +131,13 @@ class TestOrphanDetectionE2E:
         )
 
         inbox = data_dir / "shared" / "inbox" / "rin"
-        messages = list(inbox.glob("*.json"))
-        assert len(messages) >= 1
+        messages = list(inbox.glob("*.json")) if inbox.exists() else []
+        assert len(messages) == 0
 
-        # Verify message content
-        msg_data = json.loads(messages[0].read_text(encoding="utf-8"))
-        assert "rie" in msg_data.get("content", "")
-        assert msg_data.get("type") == "system_alert"
+    def test_trivial_orphan_auto_removed(self, data_dir, make_anima):
+        """A trivial orphan (empty dir) is automatically removed."""
+        make_anima("sakura")
 
-    def test_orphan_without_supervisor_still_detected(self, data_dir, make_anima):
-        """An orphan with no resolvable supervisor is still listed in results."""
-        # Create orphan with no status.json and no config entry
         orphan_dir = data_dir / "animas" / "rie"
         orphan_dir.mkdir()
 
@@ -152,6 +147,7 @@ class TestOrphanDetectionE2E:
             data_dir / "animas", data_dir / "shared", age_threshold_s=0
         )
 
-        # Should still be detected even if notification fails
         assert len(orphans) == 1
         assert orphans[0]["name"] == "rie"
+        assert orphans[0]["action"] == "auto_removed"
+        assert not orphan_dir.exists()
