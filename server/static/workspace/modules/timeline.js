@@ -265,7 +265,7 @@ function _createEventElement(evt) {
   // Icon
   const iconEl = document.createElement("span");
   iconEl.className = "tl-event-icon";
-  iconEl.textContent = getIcon(evt.type);
+  iconEl.innerHTML = getIcon(evt.type);
   iconEl.style.cssText = "flex-shrink:0;";
 
   // Anima
@@ -294,6 +294,7 @@ function _createEventElement(evt) {
   el.appendChild(summaryEl);
 
   wrapper.appendChild(el);
+  if (window.lucide) lucide.createIcons({ nodes: [iconEl] });
 
   // Expandable content panel
   if (hasContent) {

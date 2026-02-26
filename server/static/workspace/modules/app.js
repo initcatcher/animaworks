@@ -9,7 +9,7 @@ import { initAnima, loadAnimas, selectAnima, renderAnimaSelector, renderStatus }
 import { initMemory, loadMemoryTab } from "./memory.js";
 import { initSession, loadSessions } from "./session.js";
 import { escapeHtml, renderSimpleMarkdown, smartTimestamp } from "./utils.js";
-import { initOffice, getDesks, highlightDesk, setCharacterClickHandler, getScene, registerClickTarget, setCharacterUpdateHook, getObstacles, getFloorDimensions } from "./office3d.js";
+import { initOffice, disposeOffice, getDesks, highlightDesk, setCharacterClickHandler, getScene, registerClickTarget, setCharacterUpdateHook, getObstacles, getFloorDimensions } from "./office3d.js";
 import { initCharacters, createCharacter, removeCharacter, updateCharacterState, updateAllCharacters, getCharacterGroup, getCharacterHome, setAppearance } from "./character.js";
 import { initBustup, setCharacter, setExpression, setTalking, onClick as onBustupClick, setLive2dAppearance } from "./live2d.js";
 import { createNavGrid } from "./navigation.js";
@@ -111,6 +111,7 @@ function addActivity(type, animaName, summary, isoTs) {
     <span class="activity-summary">${escapeHtml(summary)}</span>`;
 
   dom.paneActivity.prepend(entry);
+  if (window.lucide) lucide.createIcons({ nodes: [entry] });
 
   // Cap at 200 entries
   while (dom.paneActivity.children.length > 200) {
@@ -278,14 +279,17 @@ async function switchView(view) {
   localStorage.setItem("aw-workspace-view", view);
 
   if (view === "org") {
-    // Hide 3D, show org
+    // Dispose 3D resources before switching
+    disposeOffice();
+    setState({ officeInitialized: false });
+
     dom.officePanel.classList.add("hidden");
     dom.orgPanel.classList.remove("hidden");
 
     const { animas } = getState();
     await initOrgDashboard(dom.orgPanel, animas);
   } else {
-    // Hide org, show 3D
+    // Dispose org dashboard before switching
     dom.orgPanel.classList.add("hidden");
     dom.officePanel.classList.remove("hidden");
     disposeOrgDashboard();
