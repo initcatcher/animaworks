@@ -84,6 +84,7 @@ class ModelConfig(BaseModel):
     thinking_effort: str | None = None  # "low"/"medium"/"high"/"max" (default: "high")
     llm_timeout: int | None = None  # LLM API呼び出しタイムアウト（秒）
     extra_keys: dict[str, str] = {}  # provider-specific credential keys (e.g. api_version, vertex_project)
+    mode_s_auth: str | None = None  # Mode S auth: "max"|"api"|"bedrock"|"vertex"|None(=max)
 
 
 class AnimaConfig(BaseModel):

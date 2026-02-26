@@ -981,7 +981,21 @@ class ToolHandler:
                 to, known_animas, config.external_messaging,
             )
         except (ValueError, RecipientNotFoundError) as e:
-            return _error_result("UnknownRecipient", str(e))
+            # Fallback for weak models: guide to correct action instead of
+            # returning a hard error that may cause the model to exhaust all
+            # channels and produce an empty response.
+            session = active_session_type.get()
+            if session == "chat":
+                return (
+                    f"宛先 '{to}' には send_message で送信できません。"
+                    "チャット中は直接テキストで返答すれば人間ユーザーに届きます。"
+                    "send_message は他のAnima宛てにのみ使用してください。"
+                )
+            return (
+                f"宛先 '{to}' には send_message で送信できません。"
+                "人間への連絡は call_human を使用してください。"
+                "send_message は他のAnima宛てにのみ使用してください。"
+            )
         except Exception as e:
             logger.warning(
                 "Recipient resolution failed for '%s': %s",

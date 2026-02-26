@@ -817,16 +817,17 @@ class AgentSDKExecutor(BaseExecutor):
     def _build_env(self) -> dict[str, str]:
         """Build env dict for the Claude Code child process.
 
-        Authentication mode is auto-detected from the per-Anima credential:
+        Authentication mode is determined by ``mode_s_auth`` (per-Anima
+        setting from status.json / anima_defaults):
 
-        1. **API direct** — credential has ``api_key`` →
-           ``ANTHROPIC_API_KEY`` is set to that key.
-        2. **Bedrock** — credential ``keys`` contain ``aws_access_key_id`` →
-           ``CLAUDE_CODE_USE_BEDROCK=1`` plus AWS env vars.
-        3. **Vertex AI** — credential ``keys`` contain ``vertex_project`` →
-           ``CLAUDE_CODE_USE_VERTEX=1`` plus GCP env vars.
-        4. **Max plan (default)** — none of the above →
-           ``ANTHROPIC_API_KEY=""`` (subscription auth).
+        * ``"api"`` — credential has ``api_key`` →
+          ``ANTHROPIC_API_KEY`` is set to that key.
+        * ``"bedrock"`` — credential ``keys`` contain ``aws_access_key_id``
+          → ``CLAUDE_CODE_USE_BEDROCK=1`` plus AWS env vars.
+        * ``"vertex"`` — credential ``keys`` contain ``vertex_project`` →
+          ``CLAUDE_CODE_USE_VERTEX=1`` plus GCP env vars.
+        * ``"max"`` / ``None`` (default) — subscription auth →
+          ``ANTHROPIC_API_KEY=""`` (Max plan).
         """
         from core.paths import PROJECT_DIR
 
@@ -838,13 +839,21 @@ class AgentSDKExecutor(BaseExecutor):
             "CLAUDECODE": "",
         }
 
+        auth = self._model_config.mode_s_auth
         extra = self._model_config.extra_keys
         api_key = self._resolve_api_key()
 
-        if api_key:
-            env["ANTHROPIC_API_KEY"] = api_key
-            logger.info("Mode S auth: API direct (credential has api_key)")
-        elif extra.get("aws_access_key_id"):
+        if auth == "api":
+            if api_key:
+                env["ANTHROPIC_API_KEY"] = api_key
+                logger.info("Mode S auth: API direct (mode_s_auth=api)")
+            else:
+                logger.warning(
+                    "Mode S auth: mode_s_auth=api but no api_key found; "
+                    "falling back to Max plan"
+                )
+                env["ANTHROPIC_API_KEY"] = ""
+        elif auth == "bedrock":
             env["ANTHROPIC_API_KEY"] = ""
             env["CLAUDE_CODE_USE_BEDROCK"] = "1"
             for env_key, extra_key in (
@@ -857,8 +866,8 @@ class AgentSDKExecutor(BaseExecutor):
                 val = extra.get(extra_key) or os.environ.get(env_key)
                 if val:
                     env[env_key] = val
-            logger.info("Mode S auth: Bedrock (credential has AWS keys)")
-        elif extra.get("vertex_project"):
+            logger.info("Mode S auth: Bedrock (mode_s_auth=bedrock)")
+        elif auth == "vertex":
             env["ANTHROPIC_API_KEY"] = ""
             env["CLAUDE_CODE_USE_VERTEX"] = "1"
             for env_key, extra_key in (
@@ -869,10 +878,12 @@ class AgentSDKExecutor(BaseExecutor):
                 val = extra.get(extra_key) or os.environ.get(env_key)
                 if val:
                     env[env_key] = val
-            logger.info("Mode S auth: Vertex AI (credential has vertex keys)")
+            logger.info("Mode S auth: Vertex AI (mode_s_auth=vertex)")
         else:
+            # Default: Max plan (subscription auth).  Block any API key
+            # that might leak from the parent process or anima_defaults.
             env["ANTHROPIC_API_KEY"] = ""
-            logger.info("Mode S auth: Max plan (no credential keys)")
+            logger.info("Mode S auth: Max plan (mode_s_auth=%s)", auth)
 
         if self._model_config.api_base_url:
             env["ANTHROPIC_BASE_URL"] = self._model_config.api_base_url
