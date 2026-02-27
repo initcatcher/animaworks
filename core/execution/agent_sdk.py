@@ -1582,6 +1582,14 @@ class AgentSDKExecutor(BaseExecutor):
                             await stream_gen.aclose()
                             _clear_session_id(self._anima_dir, session_type)
                             fell_back = True
+                        except StopAsyncIteration:
+                            logger.warning(
+                                "Resume stream empty (session_id=%s), "
+                                "falling back to fresh session.",
+                                session_id_to_resume,
+                            )
+                            _clear_session_id(self._anima_dir, session_type)
+                            fell_back = True
                         else:
                             yield first_event
                             async for event in stream_gen:
