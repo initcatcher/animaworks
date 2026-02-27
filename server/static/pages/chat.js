@@ -289,7 +289,7 @@ export function render(container) {
         </div>
 
         <!-- Chat Input -->
-        <form id="chatPageForm" class="chat-input-form" style="padding:0.75rem; border-top:1px solid var(--border-color, #eee);">
+        <form id="chatPageForm" class="chat-input-form">
           <div class="image-preview-bar" id="chatPagePreviewBar" style="display:none"></div>
           <div class="pending-queue-bar" id="chatPagePending" style="display:none">
             <div class="pending-queue-header">
@@ -442,6 +442,20 @@ function _bindEvents() {
     e.preventDefault();
     _submitChat();
   });
+
+  // Focus textarea when clicking empty area inside the input wrapper.
+  const inputWrap = _container.querySelector(".chat-input-wrap");
+  const focusChatInputFromWrap = (e) => {
+    if (e.target instanceof Element && e.target.closest("button, input, select, textarea, a")) return;
+    const input = _$("chatPageInput");
+    input?.focus();
+  };
+  if (inputWrap) {
+    inputWrap.addEventListener("pointerdown", focusChatInputFromWrap);
+    _boundListeners.push({ el: inputWrap, event: "pointerdown", handler: focusChatInputFromWrap });
+    inputWrap.addEventListener("click", focusChatInputFromWrap);
+    _boundListeners.push({ el: inputWrap, event: "click", handler: focusChatInputFromWrap });
+  }
 
   // Textarea: Ctrl+Enter = send, Alt+Enter = queue
   _addListener("chatPageInput", "keydown", (e) => {
