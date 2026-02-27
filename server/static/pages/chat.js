@@ -24,7 +24,7 @@ let _intervals = [];
 let _boundListeners = [];
 let _historyState = {};  // Per-anima: { sessions, hasMore, nextBefore, loading }
 let _chatObserver = null;
-let _isChatStreaming = false;
+let _streamingContext = null; // { anima, thread } — 現在ストリーミング中のAnima+スレッド
 let _selectedThreadId = "default";
 let _threads = {};  // { [animaName]: [{ id, label, unread }] }
 let _activeThreadByAnima = {};  // { [animaName]: threadId }
@@ -579,7 +579,7 @@ async function _loadAnimas() {
     _restoreChatUiState(uiState);
     _renderAddConversationMenu();
     _renderAnimaTabs();
-    if (_animas.length > 0 && !_selectedAnima && !_isChatStreaming) {
+    if (_animas.length > 0 && !_selectedAnima && !_streamingContext) {
       const firstTab = _animaTabs[0]?.name;
       _openOrSelectAnima(firstTab || _animas[0].name);
     } else if (_selectedAnima) {
@@ -881,7 +881,7 @@ function _renderAnimaTabs() {
 }
 
 async function _resumeActiveStream(animaName) {
-  if (_isChatStreaming || _chatAbortController) return;
+  if (_streamingContext || _chatAbortController) return;
 
   try {
     const active = await fetchActiveStream(animaName);
@@ -907,7 +907,7 @@ async function _resumeActiveStream(animaName) {
     history.push(streamingMsg);
     _renderChat();
 
-    _isChatStreaming = true;
+    _streamingContext = { anima: animaName, thread: tid };
     _chatAbortController = new AbortController();
     _updateSendButton();
 
@@ -971,7 +971,7 @@ async function _resumeActiveStream(animaName) {
       logger.error("Resume stream error", { anima: animaName, error: err.message });
     }
   } finally {
-    _isChatStreaming = false;
+    _streamingContext = null;
     _chatAbortController = null;
     _updateSendButton();
   }
@@ -1380,7 +1380,7 @@ async function _loadOlderMessages() {
   if (!name) return;
   const hs = _historyState[name]?.[tid];
   if (!hs || !hs.hasMore || hs.loading) return;
-  if (_isChatStreaming) return;
+  if (_streamingContext?.anima === name && _streamingContext?.thread === tid) return;
 
   hs.loading = true;
   _renderChat(false);
@@ -1552,6 +1552,10 @@ function _submitChat() {
   const msg = input.value.trim();
   const hasImages = _imageInputManager && _imageInputManager.getImageCount() > 0;
 
+  // 現在表示中のAnima+スレッドがストリーミング中かどうか
+  const _isChatStreaming = _streamingContext?.anima === _selectedAnima &&
+    _streamingContext?.thread === _selectedThreadId;
+
   // ── Not streaming ──
   if (!_isChatStreaming) {
     if (msg || hasImages) {
@@ -1644,7 +1648,7 @@ async function _sendChat(message, overrideImages = null) {
 
   const input = _$("chatPageInput");
   const sendBtn = _$("chatPageSendBtn");
-  _isChatStreaming = true;
+  _streamingContext = { anima: name, thread: tid };
   _chatAbortController = new AbortController();
   _updateSendButton();
   if (input) input.placeholder = t("chat.message_to", { name });
@@ -1777,7 +1781,7 @@ async function _sendChat(message, overrideImages = null) {
       _renderChat();
     }
   } finally {
-    _isChatStreaming = false;
+    _streamingContext = null;
     _chatAbortController = null;
     if (input) {
       input.placeholder = t("chat.message_to", { name });
@@ -1871,6 +1875,10 @@ function _updateSendButton() {
   const queueBtn = _$("chatPageQueueBtn");
   const inputVal = _$("chatPageInput")?.value?.trim() || "";
   const hasInput = inputVal.length > 0;
+
+  // 現在表示中のAnima+スレッドがストリーミング中かどうか
+  const _isChatStreaming = _streamingContext?.anima === _selectedAnima &&
+    _streamingContext?.thread === _selectedThreadId;
 
   if (queueBtn) {
     queueBtn.disabled = !hasInput || !_selectedAnima;
