@@ -8,7 +8,7 @@ import ipaddress
 import re
 import socket
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
@@ -33,6 +33,7 @@ _PROXY_ALLOWED_IMAGE_TYPES = {
     "image/webp",
 }
 _PROXY_MAX_BYTES = 5 * 1024 * 1024
+_PROXY_MAX_REDIRECTS = 3
 _PROXY_ALLOWED_DOMAINS = {
     "cdn.search.brave.com",
     "images.unsplash.com",
@@ -82,6 +83,34 @@ def _is_private_or_local_host(host: str) -> bool:
         ):
             return True
     return False
+
+
+def _validate_proxy_target(url: str) -> str:
+    """Validate proxy target URL and return normalized URL string."""
+    parsed = urlparse(url)
+    if parsed.scheme.lower() != "https":
+        raise HTTPException(status_code=400, detail="Only HTTPS URLs are allowed")
+    host = parsed.hostname or ""
+    if not host:
+        raise HTTPException(status_code=400, detail="Invalid URL host")
+    if _is_private_or_local_host(host):
+        raise HTTPException(status_code=400, detail="Blocked private/local address")
+    if not _is_host_allowed(host):
+        raise HTTPException(status_code=403, detail="Host is not in allowlist")
+    return parsed.geturl()
+
+
+def _detect_image_content_type(body: bytes) -> str | None:
+    """Detect image content type from magic bytes."""
+    if body.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if body.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if body.startswith(b"GIF87a") or body.startswith(b"GIF89a"):
+        return "image/gif"
+    if len(body) >= 12 and body.startswith(b"RIFF") and body[8:12] == b"WEBP":
+        return "image/webp"
+    return None
 
 
 class AssetGenerateRequest(BaseModel):
@@ -306,24 +335,28 @@ def create_assets_router() -> APIRouter:
     @router.get("/media/proxy")
     async def media_proxy(url: str):
         """Proxy external images for safer rendering in chat bubbles."""
-        parsed = urlparse(url)
-        if parsed.scheme.lower() != "https":
-            raise HTTPException(status_code=400, detail="Only HTTPS URLs are allowed")
-        host = parsed.hostname or ""
-        if not host:
-            raise HTTPException(status_code=400, detail="Invalid URL host")
-        if _is_private_or_local_host(host):
-            raise HTTPException(status_code=400, detail="Blocked private/local address")
-        if not _is_host_allowed(host):
-            raise HTTPException(status_code=403, detail="Host is not in allowlist")
+        current_url = _validate_proxy_target(url)
 
         timeout = httpx.Timeout(10.0, connect=5.0)
         try:
-            async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
-                upstream = await client.get(url)
+            async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
+                upstream = None
+                for _ in range(_PROXY_MAX_REDIRECTS + 1):
+                    upstream = await client.get(current_url)
+                    if upstream.status_code not in {301, 302, 303, 307, 308}:
+                        break
+                    location = upstream.headers.get("location")
+                    if not location:
+                        raise HTTPException(status_code=502, detail="Invalid redirect location")
+                    redirected = urljoin(current_url, location)
+                    current_url = _validate_proxy_target(redirected)
+                else:
+                    raise HTTPException(status_code=508, detail="Too many redirects")
         except httpx.HTTPError as exc:
             raise HTTPException(status_code=502, detail=f"Failed to fetch upstream image: {exc}") from exc
 
+        if upstream is None:
+            raise HTTPException(status_code=502, detail="Failed to fetch upstream image")
         if upstream.status_code >= 400:
             raise HTTPException(status_code=upstream.status_code, detail="Upstream image fetch failed")
 
@@ -342,10 +375,15 @@ def create_assets_router() -> APIRouter:
         body = upstream.content
         if len(body) > _PROXY_MAX_BYTES:
             raise HTTPException(status_code=413, detail="Image too large")
+        detected_type = _detect_image_content_type(body)
+        if not detected_type:
+            raise HTTPException(status_code=415, detail="Invalid image payload")
+        if detected_type != content_type:
+            raise HTTPException(status_code=415, detail="Content type mismatch")
 
         return Response(
             content=body,
-            media_type=content_type,
+            media_type=detected_type,
             headers={
                 "Cache-Control": "public, max-age=300",
                 "X-Content-Type-Options": "nosniff",

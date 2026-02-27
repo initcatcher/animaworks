@@ -237,7 +237,7 @@ export function renderChatImages(images, options = {}) {
     const src = _resolveArtifactSrc(img, animaName);
     if (!src) continue;
     count += 1;
-    html += `<img src="${src}" class="chat-attached-image" loading="lazy" />`;
+    html += `<img src="${src}" class="chat-attached-image" loading="lazy" alt="Attached image" onerror="this.onerror=null;this.classList.add('chat-attached-image-error');this.alt='Image unavailable';" />`;
   }
   html += '</div>';
   return count > 0 ? html : "";
