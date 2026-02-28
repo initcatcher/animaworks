@@ -196,6 +196,9 @@ export function renderLiveBubble(msg, opts) {
 
   // assistant
   const streamClass = msg.streaming ? " streaming" : "";
+  const streamIdAttr = msg.streaming && msg.streamId
+    ? ` data-stream-id="${escapeHtml(String(msg.streamId))}"`
+    : "";
   let thinkingHtml = "";
   if (msg.thinking && msg.thinkingText) {
     thinkingHtml = `<div class="thinking-inline-preview">${escapeHtml(msg.thinkingText)}</div>`;
@@ -214,7 +217,7 @@ export function renderLiveBubble(msg, opts) {
     : "";
   const imagesHtml = renderImages(msg.images, { animaName: opts.animaName });
 
-  return `<div class="chat-bubble assistant${streamClass}">${thinkingHtml}${content}${imagesHtml}${toolHtml}${tsHtml}</div>`;
+  return `<div class="chat-bubble assistant${streamClass}"${streamIdAttr}>${thinkingHtml}${content}${imagesHtml}${toolHtml}${tsHtml}</div>`;
 }
 
 /**

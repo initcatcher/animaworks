@@ -102,8 +102,14 @@ export function createChatRenderer(ctx) {
   function renderStreamingBubble(msg) {
     const messagesEl = $("chatPageMessages");
     if (!messagesEl) return;
-    const bubbles = messagesEl.querySelectorAll(".chat-bubble.assistant.streaming");
-    const bubble = bubbles[bubbles.length - 1];
+    let bubble = null;
+    if (msg.streamId) {
+      bubble = messagesEl.querySelector(`.chat-bubble.assistant.streaming[data-stream-id="${CSS.escape(String(msg.streamId))}"]`);
+    }
+    if (!bubble) {
+      const bubbles = messagesEl.querySelectorAll(".chat-bubble.assistant.streaming");
+      bubble = bubbles[bubbles.length - 1];
+    }
     if (!bubble) return;
 
     bubble.innerHTML = renderStreamingBubbleInner(msg, _renderOpts());

@@ -13,6 +13,12 @@ const SEND_BTN_ICONS = {
 export function createStreamingController(ctx) {
   const { state, deps } = ctx;
   const { t, escapeHtml, logger, streamChat, fetchActiveStream, fetchStreamProgress } = deps;
+  let _streamSeq = 0;
+
+  function nextStreamId(animaName, threadId) {
+    _streamSeq += 1;
+    return `${animaName}:${threadId}:${Date.now()}:${_streamSeq}`;
+  }
 
   function setSendButtonIcon(sendBtn, mode) {
     sendBtn.innerHTML = SEND_BTN_ICONS[mode] || SEND_BTN_ICONS.send;
@@ -174,6 +180,18 @@ export function createStreamingController(ctx) {
     const images = overrideImages?.images || state.imageInputManager?.getPendingImages() || [];
     const displayImages = overrideImages?.displayImages || state.imageInputManager?.getDisplayImages() || [];
     if (!name || (!message.trim() && images.length === 0)) return;
+    if (state.streamingContext && state.chatAbortController) {
+      const sameStreamTarget =
+        state.streamingContext.anima === name &&
+        state.streamingContext.thread === (state.selectedThreadId || "default");
+      if (!sameStreamTarget) {
+        logger.warn("Blocked concurrent stream start", {
+          active: state.streamingContext,
+          requested: { anima: name, thread: state.selectedThreadId || "default" },
+        });
+        return;
+      }
+    }
 
     const currentAnima = state.animas.find(p => p.name === name);
     if (currentAnima?.status === "bootstrapping" || currentAnima?.bootstrapping) {
@@ -204,7 +222,17 @@ export function createStreamingController(ctx) {
     const sendTs = new Date().toISOString();
     history.push({ role: "user", text: message, images: displayImages, timestamp: sendTs });
     if (threadEntry) threadEntry.lastTs = sendTs;
-    const streamingMsg = { role: "assistant", text: "", streaming: true, activeTool: null, timestamp: sendTs, thinkingText: "", thinking: false };
+    const streamId = nextStreamId(name, tid);
+    const streamingMsg = {
+      role: "assistant",
+      text: "",
+      streaming: true,
+      activeTool: null,
+      timestamp: sendTs,
+      thinkingText: "",
+      thinking: false,
+      streamId,
+    };
     history.push(streamingMsg);
     ctx.controllers.renderer.renderChat();
 
@@ -228,31 +256,35 @@ export function createStreamingController(ctx) {
       logger.debug(`_sendChat: starting stream for ${name} msg_len=${message.length}`);
       await streamChat(name, body, state.chatAbortController.signal, {
         onTextDelta: text => {
+          if (!streamingMsg.streaming) return;
           streamingMsg.afterHeartbeatRelay = false;
           streamingMsg.text += text;
           logger.debug(`onTextDelta: delta_len=${text.length} total_len=${streamingMsg.text.length}`);
           ctx.controllers.renderer.renderStreamingBubble(streamingMsg);
         },
-        onToolStart: toolName => { logger.debug(`onToolStart: ${toolName}`); streamingMsg.activeTool = toolName; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
-        onToolEnd: () => { logger.debug("onToolEnd"); streamingMsg.activeTool = null; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
+        onToolStart: toolName => { if (!streamingMsg.streaming) return; logger.debug(`onToolStart: ${toolName}`); streamingMsg.activeTool = toolName; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
+        onToolEnd: () => { if (!streamingMsg.streaming) return; logger.debug("onToolEnd"); streamingMsg.activeTool = null; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
         onChainStart: () => { logger.debug("onChainStart"); },
         onHeartbeatRelayStart: ({ message: msg }) => {
+          if (!streamingMsg.streaming) return;
           logger.debug(`onHeartbeatRelayStart: ${msg}`);
           streamingMsg.heartbeatRelay = true; streamingMsg.heartbeatText = "";
           ctx.controllers.renderer.renderStreamingBubble(streamingMsg);
           ctx.controllers.activity.addLocalActivity("system", name, `${t("chat.heartbeat_relay")}: ${msg}`);
         },
         onHeartbeatRelay: ({ text }) => {
+          if (!streamingMsg.streaming) return;
           streamingMsg.heartbeatText = (streamingMsg.heartbeatText || "") + text;
           ctx.controllers.renderer.renderStreamingBubble(streamingMsg);
         },
         onHeartbeatRelayDone: () => {
+          if (!streamingMsg.streaming) return;
           streamingMsg.heartbeatRelay = false; streamingMsg.heartbeatText = ""; streamingMsg.afterHeartbeatRelay = true;
           ctx.controllers.renderer.renderStreamingBubble(streamingMsg);
         },
-        onThinkingStart: () => { streamingMsg.thinkingText = ""; streamingMsg.thinking = true; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
-        onThinkingDelta: text => { streamingMsg.thinkingText = (streamingMsg.thinkingText || "") + text; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
-        onThinkingEnd: () => { streamingMsg.thinking = false; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
+        onThinkingStart: () => { if (!streamingMsg.streaming) return; streamingMsg.thinkingText = ""; streamingMsg.thinking = true; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
+        onThinkingDelta: text => { if (!streamingMsg.streaming) return; streamingMsg.thinkingText = (streamingMsg.thinkingText || "") + text; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
+        onThinkingEnd: () => { if (!streamingMsg.streaming) return; streamingMsg.thinking = false; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
         onError: ({ message: errorMsg }) => {
           logger.debug(`onError: ${errorMsg}`);
           streamingMsg.text += `\n${t("chat.error_prefix")} ${errorMsg}`;
@@ -333,10 +365,12 @@ export function createStreamingController(ctx) {
       if (!state.chatHistories[animaName][tid]) state.chatHistories[animaName][tid] = [];
       const history = state.chatHistories[animaName][tid];
 
+      const streamId = nextStreamId(animaName, tid);
       const streamingMsg = {
         role: "assistant", text: progress.full_text || "", streaming: true,
         activeTool: progress.active_tool || null, timestamp: new Date().toISOString(),
         thinkingText: "", thinking: false,
+        streamId,
       };
       history.push(streamingMsg);
       ctx.controllers.renderer.renderChat();
@@ -353,12 +387,12 @@ export function createStreamingController(ctx) {
       });
 
       await streamChat(animaName, resumeBody, state.chatAbortController.signal, {
-        onTextDelta: text => { streamingMsg.text += text; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
-        onToolStart: toolName => { streamingMsg.activeTool = toolName; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
-        onToolEnd: () => { streamingMsg.activeTool = null; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
-        onThinkingStart: () => { streamingMsg.thinkingText = ""; streamingMsg.thinking = true; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
-        onThinkingDelta: text => { streamingMsg.thinkingText = (streamingMsg.thinkingText || "") + text; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
-        onThinkingEnd: () => { streamingMsg.thinking = false; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
+        onTextDelta: text => { if (!streamingMsg.streaming) return; streamingMsg.text += text; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
+        onToolStart: toolName => { if (!streamingMsg.streaming) return; streamingMsg.activeTool = toolName; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
+        onToolEnd: () => { if (!streamingMsg.streaming) return; streamingMsg.activeTool = null; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
+        onThinkingStart: () => { if (!streamingMsg.streaming) return; streamingMsg.thinkingText = ""; streamingMsg.thinking = true; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
+        onThinkingDelta: text => { if (!streamingMsg.streaming) return; streamingMsg.thinkingText = (streamingMsg.thinkingText || "") + text; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
+        onThinkingEnd: () => { if (!streamingMsg.streaming) return; streamingMsg.thinking = false; ctx.controllers.renderer.renderStreamingBubble(streamingMsg); },
         onError: ({ message: errorMsg }) => { streamingMsg.text += `\n${t("chat.error_prefix")} ${errorMsg}`; streamingMsg.streaming = false; ctx.controllers.renderer.renderChat(); },
         onDone: ({ summary, images }) => {
           streamingMsg.text = summary || streamingMsg.text || t("chat.empty_response");
