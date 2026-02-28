@@ -63,6 +63,7 @@ from core.execution._sdk_security import (  # noqa: F401
     _guard_grep,
     _guard_read,
 )
+from core.execution import _sdk_session
 from core.execution._sdk_session import (  # noqa: F401
     _CONTEXT_AUTOCOMPACT_SAFETY,
     _PROMPT_FILE_THRESHOLD,
@@ -502,7 +503,7 @@ class AgentSDKExecutor(BaseExecutor):
                     "Retrying with fresh session.",
                     session_id_to_resume, e,
                 )
-                _clear_session_id(self._anima_dir, session_type)
+                _sdk_session._clear_session_id(self._anima_dir, session_type)
                 # Retry without resume
                 options, pf = self._build_sdk_options(
                     system_prompt, _max_turns, _cw, session_stats,
@@ -816,7 +817,7 @@ class AgentSDKExecutor(BaseExecutor):
                                 RESUME_TIMEOUT_SEC, session_id_to_resume,
                             )
                             await stream_gen.aclose()
-                            _clear_session_id(self._anima_dir, session_type)
+                            _sdk_session._clear_session_id(self._anima_dir, session_type)
                             fell_back = True
                         except StopAsyncIteration:
                             logger.warning(
@@ -824,7 +825,7 @@ class AgentSDKExecutor(BaseExecutor):
                                 "falling back to fresh session.",
                                 session_id_to_resume,
                             )
-                            _clear_session_id(self._anima_dir, session_type)
+                            _sdk_session._clear_session_id(self._anima_dir, session_type)
                             fell_back = True
                         else:
                             yield first_event
@@ -836,7 +837,7 @@ class AgentSDKExecutor(BaseExecutor):
                         "Retrying with fresh session.",
                         session_id_to_resume, e,
                     )
-                    _clear_session_id(self._anima_dir, session_type)
+                    _sdk_session._clear_session_id(self._anima_dir, session_type)
                     fell_back = True
 
                 if fell_back:
