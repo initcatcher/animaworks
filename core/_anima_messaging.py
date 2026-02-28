@@ -18,7 +18,7 @@ from typing import Any
 
 from core.time_utils import now_jst
 
-from core.execution._sanitize import ORIGIN_HUMAN
+from core.execution._sanitize import ORIGIN_HUMAN, ORIGIN_SYSTEM
 from core.memory.conversation import ConversationMemory, ToolRecord
 from core.memory.streaming_journal import StreamingJournal
 from core.paths import load_prompt
@@ -62,6 +62,7 @@ class MessagingMixin:
                 self._status_slots["conversation"] = "bootstrapping"
                 self._task_slots["conversation"] = "Initial bootstrap"
                 _session_token = self.agent._tool_handler.set_active_session_type("chat")
+                self.agent._tool_handler.set_session_origin(ORIGIN_SYSTEM)
 
                 conv_memory = ConversationMemory(self.anima_dir, self.model_config)
                 prompt = conv_memory.build_chat_prompt(
@@ -116,6 +117,7 @@ class MessagingMixin:
                 self._status_slots["conversation"] = "thinking"
                 self._task_slots["conversation"] = f"Responding to {from_person}"
                 _session_token = self.agent._tool_handler.set_active_session_type("chat")
+                self.agent._tool_handler.set_session_origin(ORIGIN_HUMAN)
 
                 # Build history-aware prompt via conversation memory
                 conv_memory = ConversationMemory(self.anima_dir, self.model_config, thread_id=thread_id)
@@ -256,6 +258,7 @@ class MessagingMixin:
                 self._status_slots["conversation"] = "thinking"
                 self._task_slots["conversation"] = f"Responding to {from_person}"
                 _session_token = self.agent._tool_handler.set_active_session_type("chat")
+                self.agent._tool_handler.set_session_origin(ORIGIN_HUMAN)
 
                 # Build history-aware prompt via conversation memory
                 conv_memory = ConversationMemory(self.anima_dir, self.model_config, thread_id=thread_id)

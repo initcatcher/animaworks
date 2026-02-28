@@ -22,6 +22,7 @@ from core.execution._sanitize import (
     ORIGIN_EXTERNAL_PLATFORM,
     ORIGIN_HUMAN,
     ORIGIN_UNKNOWN,
+    resolve_trust,
 )
 from core.memory.streaming_journal import StreamingJournal
 from core.messenger import InboxItem
@@ -112,6 +113,23 @@ class InboxMixin:
                     from core.tooling.handler import suppress_board_fanout, active_session_type
                     _fanout_token = suppress_board_fanout.set(True) if has_board_mention else None
                     _session_token = self.agent._tool_handler.set_active_session_type("inbox")
+
+                    # Set session origin from the most untrusted message
+                    _batch_origins: list[str] = []
+                    _batch_chains: list[str] = []
+                    for item in inbox_result.inbox_items:
+                        m = item.msg
+                        _msg_origin = _SOURCE_TO_ORIGIN.get(m.source, ORIGIN_UNKNOWN)
+                        _batch_origins.append(_msg_origin)
+                        _batch_chains.extend(m.origin_chain if m.origin_chain else [_msg_origin])
+                    _unique_chains = list(dict.fromkeys(_batch_chains))
+                    _worst_origin = min(
+                        _batch_origins or [ORIGIN_ANIMA],
+                        key=lambda o: {"untrusted": 0, "medium": 1, "trusted": 2}.get(
+                            resolve_trust(o), 0
+                        ),
+                    )
+                    self.agent._tool_handler.set_session_origin(_worst_origin, _unique_chains)
 
                     self.agent.reset_reply_tracking(session_type="inbox")
                     self.agent.reset_posted_channels(session_type="inbox")

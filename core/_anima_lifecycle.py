@@ -16,6 +16,7 @@ from typing import Any
 
 from core.time_utils import now_jst
 
+from core.execution._sanitize import ORIGIN_SYSTEM
 from core.paths import load_prompt
 from core.i18n import t
 from core.schemas import CycleResult
@@ -55,6 +56,7 @@ class LifecycleMixin:
                     # 3. Execute agent cycle (plan-only, no inbox)
                     from core.tooling.handler import active_session_type
                     _session_token = self.agent._tool_handler.set_active_session_type("background")
+                    self.agent._tool_handler.set_session_origin(ORIGIN_SYSTEM)
                     heartbeat_text = "\n\n".join(parts)
                     prior_msgs = self._build_prior_messages(heartbeat_text)
                     try:
@@ -158,6 +160,7 @@ class LifecycleMixin:
                 self._status_slots["background"] = "consolidating"
                 self._task_slots["background"] = f"Memory consolidation ({consolidation_type})"
                 _session_token = self.agent._tool_handler.set_active_session_type("background")
+                self.agent._tool_handler.set_session_origin(ORIGIN_SYSTEM)
 
                 try:
                     # Build consolidation prompt
@@ -248,6 +251,7 @@ class LifecycleMixin:
                 self._status_slots["background"] = "working"
                 self._task_slots["background"] = task_name
                 _session_token = self.agent._tool_handler.set_active_session_type("background")
+                self.agent._tool_handler.set_session_origin(ORIGIN_SYSTEM)
 
                 prompt = self._build_cron_prompt(
                     task_name, description, command_output=command_output,
@@ -332,6 +336,7 @@ class LifecycleMixin:
                 self._status_slots["background"] = "working"
                 self._task_slots["background"] = task_name
                 _session_token = self.agent._tool_handler.set_active_session_type("background")
+                self.agent._tool_handler.set_session_origin(ORIGIN_SYSTEM)
 
                 try:
                     if command:
