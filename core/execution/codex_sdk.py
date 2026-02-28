@@ -308,6 +308,9 @@ class CodexSDKExecutor(BaseExecutor):
         max_turns_override: int | None = None,
     ) -> ExecutionResult:
         """Run a session via Codex SDK (blocking mode)."""
+        if self._check_interrupted():
+            return ExecutionResult(text="[Session interrupted by user]")
+
         session_type = _resolve_session_type(trigger)
         thread_id = _load_thread_id(self._anima_dir, session_type)
 
@@ -339,6 +342,10 @@ class CodexSDKExecutor(BaseExecutor):
             else:
                 logger.exception("Codex SDK execution error")
                 return ExecutionResult(text=f"[Codex SDK Error: {e}]")
+
+        if self._check_interrupted():
+            logger.info("Codex SDK execute interrupted after run")
+            return ExecutionResult(text="[Session interrupted by user]")
 
         tid = _get_thread_id(thread)
         if tid:
@@ -381,6 +388,11 @@ class CodexSDKExecutor(BaseExecutor):
             ``{"type": "tool_end", "tool_id": "...", "tool_name": "..."}``
             ``{"type": "done", "full_text": "...", "result_message": ...}``
         """
+        if self._check_interrupted():
+            yield {"type": "text_delta", "text": "[Session interrupted by user]"}
+            yield {"type": "done", "full_text": "[Session interrupted by user]", "result_message": None}
+            return
+
         session_type = _resolve_session_type(trigger)
         thread_id = _load_thread_id(self._anima_dir, session_type)
 
@@ -399,6 +411,10 @@ class CodexSDKExecutor(BaseExecutor):
             streamed = await thread.run_streamed(prompt)
 
             async for event in streamed.events:
+                if self._check_interrupted():
+                    logger.info("Codex SDK streaming interrupted")
+                    yield {"type": "text_delta", "text": "[Session interrupted by user]"}
+                    return
                 etype = getattr(event, "type", "")
                 if etype == "item.completed":
                     item = event.item
