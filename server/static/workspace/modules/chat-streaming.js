@@ -135,7 +135,6 @@ async function _sendConversation(text, overrideImages = null) {
     images,
     displayImages,
     callbacks: {
-      ..._baseCallbacks({}),
       onTextDelta: (d) => {
         if (!streamingMsg?.streaming) return;
         streamingMsg.afterHeartbeatRelay = false;
@@ -212,7 +211,6 @@ export async function resumeConversationStream(animaName) {
 
   const { streamingMsg, success, error } = await mgr.resumeStream(animaName, threadId, {
     callbacks: {
-      ..._baseCallbacks({}),
       onTextDelta: (d) => { if (streamingMsg?.streaming) { streamingMsg.text += d; scheduleStreamingUpdate(streamingMsg); } },
       onCompressionStart: () => { if (streamingMsg?.streaming) { streamingMsg.compressing = true; updateStreamingBubble(streamingMsg); } },
       onCompressionEnd: () => { if (streamingMsg?.streaming) { streamingMsg.compressing = false; updateStreamingBubble(streamingMsg); } },
