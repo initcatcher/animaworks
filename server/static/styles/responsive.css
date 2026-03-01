@@ -313,57 +313,41 @@ body.sidebar-collapsed .sidebar-collapse-btn {
     font-size: 0.8rem;
   }
 
-  /* --- Anima tabs: collapsible dropdown on mobile --- */
+  /* --- Anima tabs: icon-only horizontal on mobile --- */
   .chat-anima-tabs-header {
-    position: relative;
+    flex-wrap: nowrap;
+    align-items: center;
+    padding: 0.3rem 0.5rem;
+    gap: 0.4rem;
   }
 
   .chat-anima-tabs-header .anima-tabs {
     flex: none;
     min-height: 0;
-  }
-
-  .chat-anima-tabs-header .anima-tab-wrap {
-    display: none;
-  }
-
-  .chat-anima-tabs-header .anima-tab-wrap:has(.anima-tab.active) {
-    display: inline-flex;
-  }
-
-  .chat-anima-tabs-header .anima-tab.active::after {
-    content: "▼";
-    font-size: 0.55rem;
-    margin-left: 0.3rem;
-    opacity: 0.5;
-  }
-
-  .chat-anima-tabs-header.anima-tabs-expanded .anima-tabs {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    background: var(--aw-color-bg-primary);
-    border: 1px solid var(--aw-color-border-light);
-    border-radius: 0 0 8px 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 6px;
-    flex-direction: column;
+    flex-wrap: nowrap;
+    padding: 0;
     gap: 4px;
   }
 
-  .chat-anima-tabs-header.anima-tabs-expanded .anima-tab-wrap {
-    display: inline-flex;
+  .chat-anima-tabs-header .anima-tab-name,
+  .chat-anima-tabs-header .anima-tab-close {
+    display: none;
   }
 
-  .chat-anima-tabs-header.anima-tabs-expanded .anima-tab.active::after {
-    content: "▲";
+  .chat-anima-tabs-header .anima-tab {
+    padding: 2px;
+    gap: 0;
+    border-radius: 50%;
   }
 
-  .anima-tab-avatar {
+  .chat-anima-tabs-header .anima-tab-avatar {
     width: 28px;
     height: 28px;
+  }
+
+  .chat-add-conversation-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
   }
 
   /* --- Thread tabs: horizontal scroll on mobile --- */
@@ -388,39 +372,26 @@ body.sidebar-collapsed .sidebar-collapse-btn {
     white-space: nowrap;
   }
 
-  /* --- Chat input: distribute buttons left/right of textarea --- */
+  /* --- Chat input: buttons on right, uniform size --- */
   .chat-input-form {
     padding: 8px;
   }
 
-  .chat-input-wrap {
-    display: flex;
-    align-items: flex-end;
-    gap: 4px;
-  }
-
   .chat-input {
-    flex: 1;
-    min-width: 0;
     max-height: 140px;
   }
 
   .chat-input-actions {
-    display: contents;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
   }
 
+  .chat-send-btn,
   .chat-attach-btn {
-    order: -1;
     width: 32px;
     height: 32px;
-    flex-shrink: 0;
-  }
-
-  .chat-send-btn {
-    order: 2;
-    width: 32px;
-    height: 32px;
-    flex-shrink: 0;
   }
 
   .chat-queue-btn {
@@ -428,7 +399,6 @@ body.sidebar-collapsed .sidebar-collapse-btn {
   }
 
   .chat-input-actions .voice-controls {
-    order: 1;
     width: 32px;
     height: 32px;
     min-width: 32px;
