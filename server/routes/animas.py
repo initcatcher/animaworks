@@ -410,13 +410,34 @@ def create_animas_router() -> APIRouter:
     # ── Org Chart ─────────────────────────────────────────
 
     @router.get("/org/chart")
-    async def get_org_chart(request: Request):
-        """Return the organisation chart as a tree-structured JSON."""
+    async def get_org_chart(
+        request: Request,
+        include_disabled: bool = False,
+        format: str = "json",
+    ):
+        """Return the organisation chart as a tree-structured JSON.
+
+        Query params:
+            include_disabled: Include disabled animas (default: false)
+            format: "json" (default) or "text" for ASCII tree
+        """
         supervisor_obj = request.app.state.supervisor
         animas_dir = request.app.state.animas_dir
-        anima_names = request.app.state.anima_names
+        anima_names = list(request.app.state.anima_names)
 
         config = load_config()
+
+        # Optionally include disabled animas
+        if include_disabled and animas_dir.exists():
+            from core.supervisor.manager import ProcessSupervisor as _PS
+
+            for anima_dir in sorted(animas_dir.iterdir()):
+                if (
+                    anima_dir.is_dir()
+                    and (anima_dir / "identity.md").exists()
+                    and anima_dir.name not in anima_names
+                ):
+                    anima_names.append(anima_dir.name)
 
         # Build flat lookup: name -> {speciality, supervisor, model, status}
         flat: dict[str, dict] = {}
@@ -427,6 +448,7 @@ def create_animas_router() -> APIRouter:
             model = None
             anima_supervisor = None
             anima_speciality = None
+            enabled = name in request.app.state.anima_names
             try:
                 resolved, _ = resolve_anima_config(config, name, anima_dir=anima_dir)
                 model = resolved.model
@@ -435,12 +457,17 @@ def create_animas_router() -> APIRouter:
             except Exception:
                 pass
 
+            status = proc_status.get("status", "unknown")
+            if not enabled:
+                status = "disabled"
+
             flat[name] = {
                 "name": name,
                 "speciality": anima_speciality,
                 "supervisor": anima_supervisor,
                 "model": model,
-                "status": proc_status.get("status", "unknown"),
+                "status": status,
+                "enabled": enabled,
             }
 
         # Build tree from flat lookup
@@ -454,6 +481,7 @@ def create_animas_router() -> APIRouter:
                 "speciality": info["speciality"],
                 "model": info["model"],
                 "status": info["status"],
+                "enabled": info["enabled"],
                 "children": [_build_node(c) for c in children_names],
             }
 
@@ -464,12 +492,38 @@ def create_animas_router() -> APIRouter:
 
         from datetime import datetime, timezone, timedelta
 
+        tree = [_build_node(r) for r in roots]
+
+        # Text format: return ASCII tree
+        if format == "text":
+            from fastapi.responses import PlainTextResponse
+
+            lines: list[str] = []
+
+            def _render(node: dict, prefix: str = "", is_last: bool = True) -> None:
+                connector = "\u2514\u2500\u2500 " if is_last else "\u251c\u2500\u2500 "
+                status_mark = "\u2713" if node["status"] == "running" else ("\u2717" if node["status"] == "disabled" else "?")
+                label = f"{node['name']} [{node['speciality'] or '?'}] ({status_mark})"
+                lines.append(f"{prefix}{connector}{label}")
+                child_prefix = prefix + ("    " if is_last else "\u2502   ")
+                for i, child in enumerate(node["children"]):
+                    _render(child, child_prefix, i == len(node["children"]) - 1)
+
+            lines.append("AnimaWorks Organisation Chart")
+            lines.append("=" * 40)
+            for i, root in enumerate(tree):
+                _render(root, "", i == len(tree) - 1)
+            lines.append("")
+            lines.append(f"Total: {len(flat)} animas")
+
+            return PlainTextResponse("\n".join(lines))
+
         return {
             "generated_at": datetime.now(
                 tz=timezone(timedelta(hours=9))
             ).isoformat(),
             "total": len(flat),
-            "tree": [_build_node(r) for r in roots],
+            "tree": tree,
             "flat": flat,
         }
 

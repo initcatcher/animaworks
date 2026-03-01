@@ -181,6 +181,7 @@ class ExternalMessagingChannelConfig(BaseModel):
     enabled: bool = False
     mode: str = "socket"  # "socket" | "webhook"
     anima_mapping: dict[str, str] = {}  # channel_id → anima_name
+    default_anima: str = ""  # fallback anima for unmapped channels
 
 
 class ExternalMessagingConfig(BaseModel):
