@@ -85,6 +85,12 @@ class InboxMixin:
                     )
 
                     if inbox_result.unread_count == 0:
+                        if inbox_result.inbox_items:
+                            await self._archive_processed_messages(
+                                inbox_result.inbox_items,
+                                inbox_result.senders,
+                                set(),
+                            )
                         logger.info("[%s] process_inbox_message: no messages", self.name)
                         return CycleResult(
                             trigger="inbox",
