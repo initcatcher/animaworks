@@ -66,6 +66,33 @@ class StreamingMixin:
         llm_kwargs = self._build_llm_kwargs()
         max_iterations = max_turns_override or self._model_config.max_turns
 
+        # Inject synthetic thinking_blocks into prior assistant messages
+        # that have tool_calls but no thinking_blocks.  Without this,
+        # LiteLLM drops the thinking param for the entire session because
+        # the Anthropic API requires thinking_blocks on every assistant
+        # turn with tool_use when extended thinking is enabled.
+        _thinking_enabled = (
+            llm_kwargs.get("thinking") or llm_kwargs.get("reasoning_effort")
+        )
+        if _thinking_enabled:
+            _patched = 0
+            for msg in messages:
+                if (
+                    msg.get("role") == "assistant"
+                    and msg.get("tool_calls")
+                    and not msg.get("thinking_blocks")
+                ):
+                    msg["thinking_blocks"] = [
+                        {"type": "thinking", "thinking": "(resumed session)"},
+                    ]
+                    _patched += 1
+            if _patched:
+                logger.info(
+                    "A stream: injected synthetic thinking_blocks into "
+                    "%d prior assistant message(s)",
+                    _patched,
+                )
+
         async with stream_error_boundary(
             all_response_text, executor_name="A-stream",
         ):
