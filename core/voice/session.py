@@ -334,7 +334,10 @@ class VoiceSession:
             await self._ws.send_json({"type": "tts_done"})
         except Exception as e:
             logger.warning("TTS failed: %s", e)
-            await self._ws.send_json({"type": "tts_done"})
+            try:
+                await self._ws.send_json({"type": "tts_done"})
+            except Exception:
+                pass
 
     async def handle_interrupt(self) -> None:
         """Handle barge-in: stop TTS, prepare for new STT."""
