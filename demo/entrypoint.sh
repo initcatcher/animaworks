@@ -95,6 +95,30 @@ with open(cfg_path, 'w') as f:
     done
     echo "Character assets installed."
 
+    # 6. Copy example runtime data (activity logs, state, channels)
+    LANG_KEY="${PRESET%%-*}"  # ja or en
+    EXAMPLES_DIR="/demo/examples/${LANG_KEY}"
+    if [ -d "$EXAMPLES_DIR" ]; then
+        # Adjust timestamps to be relative to today (in-place, container is ephemeral)
+        if [ -f /demo/adjust_dates.sh ]; then
+            /demo/adjust_dates.sh "$EXAMPLES_DIR"
+        fi
+
+        for char_dir in "$EXAMPLES_DIR"/*/; do
+            char_name="$(basename "$char_dir")"
+            [ "$char_name" = "channels" ] && continue
+            target_dir="${DATA_DIR}/animas/${char_name}"
+            if [ -d "$target_dir" ]; then
+                cp -r "$char_dir"/* "$target_dir/" 2>/dev/null || true
+            fi
+        done
+        if [ -d "$EXAMPLES_DIR/channels" ]; then
+            mkdir -p "${DATA_DIR}/shared/channels"
+            cp "$EXAMPLES_DIR/channels/"* "${DATA_DIR}/shared/channels/" 2>/dev/null || true
+        fi
+        echo "Example runtime data installed."
+    fi
+
     echo "=== Initialization complete ==="
 else
     echo "Existing configuration found — skipping initialization."
