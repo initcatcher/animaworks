@@ -83,6 +83,7 @@ EXPECTED_BUILTIN_TOOLS = frozenset({
     "create_skill",
     "plan_tasks",
     "manage_channel",
+    "audit_subordinate",
 })
 
 
@@ -102,8 +103,8 @@ class TestDispatchDictCompleteness:
         assert extra == set(), f"Unexpected tools in dispatch dict: {extra}"
 
     def test_dispatch_count(self, handler: ToolHandler):
-        """Dispatch dict should have exactly 38 entries."""
-        assert len(handler._dispatch) == 38
+        """Dispatch dict should have exactly 39 entries."""
+        assert len(handler._dispatch) == 39
 
     def test_all_dispatch_values_are_callable(self, handler: ToolHandler):
         """Every value in the dispatch dict must be callable."""
