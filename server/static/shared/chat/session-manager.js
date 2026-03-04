@@ -217,9 +217,8 @@ export class ChatSessionManager extends EventTarget {
   }
 
   isStreamingFor(anima, thread = "default") {
-    const key = this.#key(anima, thread);
-    const session = this.#sessions.get(key);
-    return session ? session.isStreaming : false;
+    const session = this.#sessions.get(this.#key(anima, thread));
+    return session?.isStreaming || false;
   }
 
   getStreamingContext(anima) {
@@ -330,7 +329,6 @@ export class ChatSessionManager extends EventTarget {
       const streamingMsg = {
         role: "assistant", text: progress.full_text || "", streaming: true,
         activeTool: progress.active_tool || null,
-        toolHistory: progress.tool_history || [],
         timestamp: new Date().toISOString(),
         thinkingText: "", thinking: false, streamId,
       };
