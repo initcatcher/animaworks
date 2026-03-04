@@ -210,6 +210,7 @@ class ToolHandler(
             "check_permissions":     self._handle_check_permissions,
             "delegate_task":         self._handle_delegate_task,
             "task_tracker":          self._handle_task_tracker,
+            "audit_subordinate":     self._handle_audit_subordinate,
             "refresh_tools": self._handle_refresh_tools,
             "share_tool": self._handle_share_tool,
             "report_procedure_outcome": self._handle_report_procedure_outcome,

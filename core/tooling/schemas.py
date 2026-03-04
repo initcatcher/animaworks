@@ -764,6 +764,29 @@ SUPERVISOR_TOOLS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "name": "audit_subordinate",
+        "description": (
+            "配下のAnimaの直近活動を包括的に監査する。"
+            "活動サマリー・タスク状況・エラー頻度・ツール使用統計・通信パターンを"
+            "構造化レポートとして返す。定期的なパフォーマンスレビューに使う。"
+            "直属部下だけでなく孫以下の配下も指定可能。"
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "監査対象の配下Anima名",
+                },
+                "days": {
+                    "type": "integer",
+                    "description": "監査期間（日数、デフォルト: 1）",
+                },
+            },
+            "required": ["name"],
+        },
+    },
 ]
 
 CHECK_PERMISSIONS_TOOLS: list[dict[str, Any]] = [
