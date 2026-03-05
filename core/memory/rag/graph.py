@@ -410,8 +410,16 @@ class KnowledgeGraph:
         def _resolve_type(f: Path) -> str:
             if memory_type is not None:
                 return memory_type
-            # Try existing graph node attribute first
-            for nid, attrs in self.graph.nodes(data=True):
+            # Try exact path match in existing graph nodes first
+            f_str = str(f)
+            for _nid, attrs in self.graph.nodes(data=True):
+                if attrs.get("path") == f_str:
+                    mt = attrs.get("memory_type")
+                    if mt:
+                        return mt
+            # Fallback: stem match (less precise but handles new files
+            # that share a stem with an existing node of known type)
+            for _nid, attrs in self.graph.nodes(data=True):
                 if attrs.get("stem") == f.stem:
                     mt = attrs.get("memory_type")
                     if mt:
@@ -742,7 +750,9 @@ class KnowledgeGraph:
 
         try:
             collection_name = f"{self.indexer.anima_name}_{memory_type}"
-            stem = node_path.stem if str(node_path) else node_id
+            stem = node_path.stem if node_path.stem else (
+                node_id.split(":", 1)[-1] if ":" in node_id else node_id
+            )
 
             # 1st attempt: filter by source_file metadata
             source_file_value = f"{memory_type}/{stem}.md"

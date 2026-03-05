@@ -935,6 +935,22 @@ def test_fetch_node_content_no_node_id_in_embedding():
             )
 
 
+def test_fetch_node_content_prefixed_node_id_with_empty_path():
+    """_fetch_node_content handles prefixed node_id (episodes:stem) when path is empty."""
+    source_contents = {"episodes/2026-03-05.md": "Episode content via prefix"}
+    vector_store = MockVectorStoreWithSourceFilter(source_contents)
+    indexer = MockIndexer()
+
+    graph_builder = KnowledgeGraph(vector_store, indexer)
+    # Simulate a node whose path attribute was lost
+    empty_path = Path("")
+
+    content = graph_builder._fetch_node_content(
+        "episodes:2026-03-05", empty_path, "episodes",
+    )
+    assert content == "Episode content via prefix"
+
+
 def test_fetch_node_content_unavailable_when_all_fail():
     """_fetch_node_content returns [Content unavailable] when all methods fail."""
     class FailingVectorStore:
