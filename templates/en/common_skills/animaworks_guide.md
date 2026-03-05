@@ -3,7 +3,7 @@ name: animaworks-guide
 description: >-
   Complete reference for animaworks commands and CLI.
   Covers server operations (start/stop/restart/status/reset), chat and messaging (chat/send/board),
-  Anima management (list/info/create/enable/disable/delete/restart/set-model/set-role/reload),
+  Anima management (list/info/create/enable/disable/delete/restart/set-model/set-role/reload/audit),
   model information (models list/info/show), heartbeat/cron, logs/cost,
   task management (task add/update/list), config management (config get/set/list),
   RAG index management (index), asset operations (optimize-assets/remake-assets),
@@ -86,6 +86,8 @@ animaworks anima delete {name}           # Delete (after ZIP archive)
 animaworks anima delete {name} --no-archive  # Delete without archive
 animaworks anima delete {name} --force   # Delete without confirmation
 animaworks anima restart {name}          # Restart process
+animaworks anima audit {name}            # Comprehensive audit of subordinate's recent activity (default: 1 day)
+animaworks anima audit {name} --days 7   # Audit last 7 days
 ```
 
 ### Change Model

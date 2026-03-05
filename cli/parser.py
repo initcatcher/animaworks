@@ -406,6 +406,17 @@ def cli_main() -> None:
     )
     p_anima_set_role.set_defaults(func=_lazy_anima_set_role)
 
+    # anima audit
+    p_anima_audit = anima_sub.add_parser(
+        "audit", help="Audit a subordinate anima's recent activity",
+    )
+    p_anima_audit.add_argument("anima", help="Target anima name to audit")
+    p_anima_audit.add_argument(
+        "--days", type=int, default=1,
+        help="Number of days to audit (default: 1, max: 30)",
+    )
+    p_anima_audit.set_defaults(func=_lazy_anima_audit)
+
     # ── Logs ──────────────────────────────────────────────────
     p_logs = sub.add_parser("logs", help="View anima logs")
     p_logs.add_argument(
@@ -666,6 +677,12 @@ def _lazy_anima_reload(args: argparse.Namespace) -> None:
     from cli.commands.anima_mgmt import cmd_anima_reload
 
     cmd_anima_reload(args)
+
+
+def _lazy_anima_audit(args: argparse.Namespace) -> None:
+    from cli.commands.anima_mgmt import cmd_anima_audit
+
+    cmd_anima_audit(args)
 
 
 def _lazy_board_read(args: argparse.Namespace) -> None:

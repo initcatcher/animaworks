@@ -2,10 +2,10 @@
 name: subordinate-management
 description: >-
   Process management for subordinate Anima: pause, resume, model change, restart,
-  task delegation, and status confirmation.
+  task delegation, status confirmation, and auditing.
   "pause", "stop", "resume", "wake", "disable", "enable",
   "change model", "restart", "delegate task", "check subordinate status",
-  "pause", "resume", "process management", "stop subordinate", "dashboard"
+  "pause", "resume", "process management", "stop subordinate", "dashboard", "audit"
 ---
 
 # Skill: Subordinate Management (Supervisor Tools)
@@ -31,6 +31,7 @@ Supervisor tools automatically enabled for Anima that have subordinates. Manages
 | `org_dashboard` | Tree view of process status, last activity, current task, and task count for all subordinates |
 | `ping_subordinate` | Liveness check for subordinates (`name` omitted = all at once, specified = single) |
 | `read_subordinate_state` | Read subordinate's `current_task.md` and `pending.md` |
+| `audit_subordinate` | Comprehensive audit of subordinate's recent activity (summary, tasks, errors, tool usage, communication) |
 
 ### Delegated Task Tracking
 
@@ -64,13 +65,22 @@ set_subordinate_model(name="aoi", model="claude-sonnet-4-6", reason="Load balanc
 restart_subordinate(name="aoi", reason="Apply model change")
 ```
 
-### Status Confirmation
+### Status Confirmation and Audit
 
 ```
-org_dashboard()                    # Dashboard for all subordinates
-ping_subordinate()                 # Liveness check for all subordinates
-ping_subordinate(name="aoi")    # Liveness check for single subordinate
-read_subordinate_state(name="aoi")  # Current task and pending task content
+org_dashboard()                         # Dashboard for all subordinates
+ping_subordinate()                      # Liveness check for all subordinates
+ping_subordinate(name="aoi")            # Liveness check for single subordinate
+read_subordinate_state(name="aoi")      # Current task and pending task content
+audit_subordinate(name="aoi")           # Comprehensive audit of last 1 day
+audit_subordinate(name="aoi", days=7)   # Audit last 7 days
+```
+
+Also available via CLI (useful for S-mode via Bash):
+
+```bash
+animaworks anima audit aoi              # Audit last 1 day
+animaworks anima audit aoi --days 7     # Audit last 7 days
 ```
 
 ### Task Delegation
@@ -83,6 +93,6 @@ task_tracker(status="active")      # Check progress of delegated tasks
 ## Permissions
 
 - **Direct subordinates only**: disable, enable, set_subordinate_model, restart_subordinate, delegate_task
-- **All subordinates (recursive)**: org_dashboard, ping_subordinate, read_subordinate_state
+- **All subordinates (recursive)**: org_dashboard, ping_subordinate, read_subordinate_state, audit_subordinate
 - You cannot pause, resume, change model, or delegate to subordinates of subordinates (grandchildren). Ask their supervisor
 - You cannot operate on yourself

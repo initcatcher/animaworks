@@ -20,7 +20,7 @@ Three tool families:
 
 1. **Claude Code built-ins**: Read, Write, Edit, Grep, Glob, Bash, git, etc. For file operations and command execution
 2. **MCP tools (`mcp__aw__*`)**: AnimaWorks-specific internal features. External tools permitted in `permissions.md` are also available directly via MCP
-   - Internal: `send_message`, `post_channel`, `read_channel`, `read_dm_history`, `add_task`, `update_task`, `list_tasks`, `call_human`, `search_memory`, `report_procedure_outcome`, `report_knowledge_outcome`, `skill`, `disable_subordinate`, `enable_subordinate`
+   - Internal: `send_message`, `post_channel`, `read_channel`, `read_dm_history`, `add_task`, `update_task`, `list_tasks`, `call_human`, `search_memory`, `report_procedure_outcome`, `report_knowledge_outcome`, `skill`, `disable_subordinate`, `enable_subordinate`, `set_subordinate_model`, `restart_subordinate`, `org_dashboard`, `ping_subordinate`, `read_subordinate_state`, `delegate_task`, `task_tracker`, `audit_subordinate`
    - External (when permitted): `mcp__aw__slack_post`, `mcp__aw__chatwork_send`, etc.
 3. **Bash + animaworks-tool**: Long-running tools (image generation, local LLM, speech transcription, etc.) are executed asynchronously via `animaworks-tool submit`
 
@@ -108,17 +108,18 @@ Organizational tools automatically enabled for Anima with subordinates. See `org
 
 | Tool | Description | S-mode MCP |
 |------|-------------|------------|
-| `org_dashboard` | Show process status of all subordinates in a tree | × |
-| `ping_subordinate` | Check subordinate liveness | × |
-| `read_subordinate_state` | Read subordinate current task | × |
-| `delegate_task` | Delegate task to subordinate | × |
-| `task_tracker` | Track delegated task progress | × |
 | `disable_subordinate` | Disable subordinate | ○ |
 | `enable_subordinate` | Re-enable subordinate | ○ |
-| `set_subordinate_model` | Change subordinate model | × |
-| `restart_subordinate` | Restart subordinate process | × |
+| `set_subordinate_model` | Change subordinate model | ○ |
+| `restart_subordinate` | Restart subordinate process | ○ |
+| `delegate_task` | Delegate task to subordinate | ○ |
+| `org_dashboard` | Show process status of all subordinates in a tree | ○ |
+| `ping_subordinate` | Check subordinate liveness | ○ |
+| `read_subordinate_state` | Read subordinate current task | ○ |
+| `task_tracker` | Track delegated task progress | ○ |
+| `audit_subordinate` | Comprehensive audit of subordinate's recent activity | ○ |
 
-In S-mode, only `disable_subordinate` and `enable_subordinate` are available via MCP. Others are A-mode only.
+All supervisor tools are available via MCP in S-mode. Audit is also available via CLI: `animaworks anima audit {name}`.
 
 ### Admin Tools (Conditional)
 
