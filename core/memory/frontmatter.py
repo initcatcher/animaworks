@@ -115,12 +115,6 @@ def validate_and_complete_frontmatter(yaml_dict: dict[str, Any], path: Path | No
     return yaml_dict
 
 
-_DOUBLE_FM_PATTERN = re.compile(
-    r"^---\s*\n(.*?\n)---\s*\n\s*---\s*\n(.*?\n)---\s*\n",
-    re.DOTALL,
-)
-
-
 def repair_double_frontmatter(path: Path) -> bool:
     """Detect and repair double ``---`` frontmatter blocks in *path*.
 

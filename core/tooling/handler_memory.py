@@ -192,7 +192,6 @@ class MemoryToolsMixin:
                 import yaml as _yaml_km_fm
                 from core.memory.frontmatter import (
                     parse_frontmatter as _parse_fm_hw,
-                    strip_content_frontmatter as _strip_fm_hw,
                     validate_and_complete_frontmatter as _validate_fm_hw,
                 )
                 from core.schemas import now_jst as _now_jst_hw
@@ -213,8 +212,8 @@ class MemoryToolsMixin:
                     path.write_text(f"---\n{_fm_hw}---\n\n{_body_hw.lstrip()}", encoding="utf-8")
                     auto_frontmatter_applied = True
                 else:
+                    # Parse failed — write as-is, let normal path handle it
                     path.write_text(content, encoding="utf-8")
-                    auto_frontmatter_applied = True
             elif (rel.startswith("knowledge/") and rel.endswith(".md")
                     and mode == "overwrite"
                     and not content.lstrip().startswith("---")):
