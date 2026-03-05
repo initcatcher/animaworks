@@ -117,14 +117,13 @@ class CommsToolsMixin:
             self._replied_to.setdefault(active_session_type.get(), set()).add(to)
             self._persist_replied_to(to, success=True)
 
-            msg = self._messenger.send(
-                to=to,
-                content=content,
-                thread_id=args.get("thread_id", ""),
-                reply_to=args.get("reply_to", ""),
-                intent=intent,
-                origin_chain=outgoing_chain,
-            )
+            try:
+                meta: dict[str, Any] = {"from_type": "external", "channel": resolved.channel}
+                if intent:
+                    meta["intent"] = intent
+                self._activity.log("message_sent", content=content, to_person=to, meta=meta)
+            except Exception:
+                logger.warning("Activity logging failed for external send to %s", to)
 
             if self._on_message_sent:
                 try:
