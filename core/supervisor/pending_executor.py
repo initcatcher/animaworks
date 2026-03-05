@@ -628,8 +628,8 @@ class PendingTaskExecutor:
                                 "[%s] Task completion notification failed after retry to %s",
                                 self._anima_name, reply_to, exc_info=True,
                             )
-                            if hasattr(self._anima, "activity_logger"):
-                                self._anima.activity_logger.log(
+                            if hasattr(self._anima, "_activity"):
+                                self._anima._activity.log(
                                     "error",
                                     content=f"Task completion notification failed: {task_id} → {reply_to}",
                                 )
@@ -789,8 +789,8 @@ class PendingTaskExecutor:
                                     "[%s] Task failure notification failed after retry to %s",
                                     self._anima_name, reply_to, exc_info=True,
                                 )
-                                if hasattr(self._anima, "activity_logger"):
-                                    self._anima.activity_logger.log(
+                                if hasattr(self._anima, "_activity"):
+                                    self._anima._activity.log(
                                         "error",
                                         content=f"Task failure notification failed: {task_id} → {reply_to}",
                                     )

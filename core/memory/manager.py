@@ -304,7 +304,11 @@ class MemoryManager:
     def write_knowledge(self, topic: str, content: str, *, origin: str = "") -> None:
         safe = re.sub(r"[^\w\-_]", "_", topic)
         path = self.knowledge_dir / f"{safe}.md"
-        path.write_text(content, encoding="utf-8")
+        try:
+            path.write_text(content, encoding="utf-8")
+        except OSError:
+            logger.warning("Failed to write knowledge to %s", path, exc_info=True)
+            return
         logger.debug("Knowledge written topic='%s' length=%d", topic, len(content))
 
         # Index the new/updated knowledge file

@@ -1039,9 +1039,10 @@ class OrgToolsMixin:
                     entry["subordinate_status"] = "unknown"
 
             sub_status = entry["subordinate_status"]
-            if status_filter == "active" and sub_status in ("done", "cancelled"):
+            _terminal = {"done", "cancelled", "failed"}
+            if status_filter == "active" and sub_status in _terminal:
                 continue
-            if status_filter == "completed" and sub_status not in ("done", "cancelled"):
+            if status_filter == "completed" and sub_status not in _terminal:
                 continue
 
             results.append(entry)
