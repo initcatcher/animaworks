@@ -180,6 +180,10 @@ class TestRepairKnowledgeFrontmatter:
         assert meta, "Repaired file must have parseable frontmatter"
         assert meta["confidence"] == 0.5
         assert "created_at" in meta
+        assert "updated_at" in meta
+        assert meta["source_episodes"] == 0
+        assert meta["auto_consolidated"] is False
+        assert meta["version"] == 1
         assert "Actual body content" in body
 
     def test_unparseable_without_dash_prefix_not_touched(self, tmp_path: Path) -> None:
