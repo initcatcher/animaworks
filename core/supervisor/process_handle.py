@@ -51,6 +51,7 @@ class ProcessStats:
     restart_count: int = 0
     last_ping_at: datetime | None = None
     missed_pings: int = 0
+    busy_pings: int = 0
     exit_code: int | None = None
 
 
@@ -361,7 +362,9 @@ class ProcessHandle:
                 self.anima_name, method, chunk_count, elapsed,
             )
 
-    async def ping(self, timeout: float = 5.0) -> bool:
+    async def ping(
+        self, timeout: float = 5.0, *, return_details: bool = False,
+    ) -> bool | dict[str, Any]:
         """
         Send ping to check if process is alive.
 
@@ -370,27 +373,31 @@ class ProcessHandle:
         """
         if self.state != ProcessState.RUNNING:
             self.stats.missed_pings += 1
-            return False
+            return {"success": False, "is_busy": False} if return_details else False
 
         try:
             response = await self.send_request("ping", {}, timeout=timeout)
             if response.error:
                 logger.warning("Ping failed for %s: %s", self.anima_name, response.error)
                 self.stats.missed_pings += 1
-                return False
+                return {"success": False, "is_busy": False} if return_details else False
 
+            result = response.result or {}
             self.stats.last_ping_at = now_jst()
             self.stats.missed_pings = 0
+            is_busy = bool(result.get("is_busy", False))
+            if return_details:
+                return {"success": True, "is_busy": is_busy}
             return True
 
         except asyncio.TimeoutError:
             logger.warning("Ping timeout for %s", self.anima_name)
             self.stats.missed_pings += 1
-            return False
+            return {"success": False, "is_busy": False} if return_details else False
         except Exception as e:
             logger.error("Ping error for %s: %s", self.anima_name, e)
             self.stats.missed_pings += 1
-            return False
+            return {"success": False, "is_busy": False} if return_details else False
 
     async def stop(self, timeout: float = 10.0) -> None:
         """

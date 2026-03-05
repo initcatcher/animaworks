@@ -197,6 +197,7 @@ CHANNEL_TOOLS: list[dict[str, Any]] = [
             "Boardの共有チャネルの直近メッセージを読む。"
             "他のAnimaやユーザーが共有した情報を確認できる。"
             "human_only=trueでユーザー発言のみフィルタリング可能。"
+            "inbox はチャネルではないため指定不可（inbox はシステムが自動処理）。"
         ),
         "parameters": {
             "type": "object",

@@ -236,6 +236,12 @@ class ActivityLogger(
                         continue
                     if involving and not self._involves(raw, involving):
                         continue
+                    if "timestamp" in raw and "ts" not in raw:
+                        raw["ts"] = raw.pop("timestamp")
+                    if "from" in raw:
+                        raw["from_person"] = raw.pop("from")
+                    if "to" in raw:
+                        raw["to_person"] = raw.pop("to")
                     if cutoff:
                         try:
                             ts = datetime.fromisoformat(raw.get("ts", ""))
@@ -245,10 +251,6 @@ class ActivityLogger(
                                 continue
                         except (ValueError, TypeError):
                             logger.debug("Failed to parse timestamp for cutoff filtering", exc_info=True)
-                    if "from" in raw:
-                        raw["from_person"] = raw.pop("from")
-                    if "to" in raw:
-                        raw["to_person"] = raw.pop("to")
                     entry = ActivityEntry(**{
                         k: v for k, v in raw.items()
                         if k in ActivityEntry.__dataclass_fields__

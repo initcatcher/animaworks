@@ -379,14 +379,14 @@ class SkillsToolsMixin:
         tasks = args.get("tasks", [])
 
         if not batch_id:
-            return _error_result("batch_id is required")
+            return _error_result("InvalidArguments", "batch_id is required")
         if not tasks:
-            return _error_result("tasks must contain at least one task")
+            return _error_result("InvalidArguments", "tasks must contain at least one task")
 
         # Validate task IDs are unique
         task_ids = [t.get("task_id", "") for t in tasks]
         if len(task_ids) != len(set(task_ids)):
-            return _error_result("Duplicate task_id found in batch")
+            return _error_result("InvalidArguments", "Duplicate task_id found in batch")
 
         task_id_set = set(task_ids)
 
@@ -395,6 +395,7 @@ class SkillsToolsMixin:
             for dep in t.get("depends_on", []):
                 if dep not in task_id_set:
                     return _error_result(
+                        "InvalidArguments",
                         f"Task '{t['task_id']}' depends on unknown task_id '{dep}'"
                     )
 
@@ -402,6 +403,7 @@ class SkillsToolsMixin:
         for t in tasks:
             if not t.get("task_id") or not t.get("title") or not t.get("description"):
                 return _error_result(
+                    "InvalidArguments",
                     f"Task missing required fields (task_id, title, description): "
                     f"{t.get('task_id', '?')}"
                 )
@@ -411,7 +413,7 @@ class SkillsToolsMixin:
         try:
             _topological_sort(tasks)
         except ValueError:
-            return _error_result("Cycle detected in depends_on references")
+            return _error_result("InvalidArguments", "Cycle detected in depends_on references")
 
         # Write task files to state/pending/
         pending_dir = self._anima_dir / "state" / "pending"

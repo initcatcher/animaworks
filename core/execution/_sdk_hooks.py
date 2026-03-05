@@ -575,7 +575,7 @@ def _build_pre_tool_hook(
             try:
                 result_str = proxy._handle_plan_tasks(tool_input)
             except Exception as exc:
-                result_str = _error_result(str(exc))
+                result_str = _error_result("PlanTasksError", str(exc))
 
             _log_tool_use(
                 anima_dir, "plan_tasks", tool_input,

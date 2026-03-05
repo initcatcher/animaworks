@@ -462,6 +462,11 @@ class HeartbeatMixin:
             summary=t("anima.heartbeat_error", exc=type(error).__name__),
             meta={"phase": "run_heartbeat", "error": str(error)[:200]},
         )
+        self._activity.log(
+            "heartbeat_end",
+            summary=f"[ERROR] {type(error).__name__}: {str(error)[:100]}",
+            meta={"status": "failed", "error": str(error)[:200]},
+        )
 
         # ── Save recovery note for next heartbeat ──
         try:

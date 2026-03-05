@@ -162,14 +162,32 @@ class HealthMixin:
             return
 
         # Ping process
-        success = await handle.ping(timeout=self.health_config.ping_timeout_sec)
+        ping_result = await handle.ping(
+            timeout=self.health_config.ping_timeout_sec, return_details=True,
+        )
+        success = bool(ping_result.get("success"))
+        is_busy = bool(ping_result.get("is_busy"))
 
         if success:
-            if handle.stats.missed_pings > 0:
+            if is_busy:
+                handle.stats.busy_pings += 1
+                handle.stats.missed_pings = 0
+                busy_limit = self.health_config.max_missed_pings * 3
+                if handle.stats.busy_pings >= busy_limit:
+                    logger.error(
+                        "Process busy too long (busy hang): %s (busy=%d/%d)",
+                        anima_name, handle.stats.busy_pings, busy_limit,
+                    )
+                    asyncio.create_task(self._handle_process_hang(anima_name, handle))
+                return
+
+            if handle.stats.missed_pings > 0 or handle.stats.busy_pings > 0:
                 logger.info("Process recovered: %s", anima_name)
+            handle.stats.busy_pings = 0
             return
 
         # Ping failed
+        handle.stats.busy_pings = 0
         logger.warning(
             "Health check failed: %s (missed=%d/%d)",
             anima_name, handle.stats.missed_pings, self.health_config.max_missed_pings,

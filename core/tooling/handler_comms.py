@@ -304,9 +304,21 @@ class CommsToolsMixin:
         channel = args.get("channel", "")
         if not channel:
             return _error_result("InvalidArguments", "channel is required")
+        _ch_lower = channel.strip().lower()
+        if _ch_lower == "inbox" or _ch_lower.startswith("inbox/") or _ch_lower.startswith("inbox\\"):
+            return _error_result(
+                "InvalidArguments",
+                f"'{channel}' is not a channel. Inbox messages are processed automatically; "
+                "do not use read_channel for inbox.",
+            )
 
         # ── ACL gate ──
-        from core.messenger import is_channel_member
+        from core.messenger import is_channel_member, _validate_name
+        from core.exceptions import RecipientNotFoundError
+        try:
+            _validate_name(channel, "channel name")
+        except RecipientNotFoundError:
+            return _error_result("InvalidArguments", f"Invalid channel name: {channel!r}")
         if not is_channel_member(self._messenger.shared_dir, channel, self._anima_name):
             return t("handler.channel_acl_denied", channel=channel)
 

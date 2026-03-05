@@ -46,6 +46,14 @@ from core.execution._tool_summary import make_tool_detail_chunk
 logger = logging.getLogger("animaworks.execution.anthropic_fallback")
 
 
+async def _close_client_quietly(client: Any) -> None:
+    """Close async API client and suppress close-time errors."""
+    try:
+        await client.close()
+    except Exception:
+        logger.debug("Failed to close Anthropic client", exc_info=True)
+
+
 def _extract_tool_uses_from_messages(messages: list[dict]) -> list[dict]:
     """Extract tool_use info from Anthropic-format messages."""
     tool_uses: list[dict] = []
@@ -239,6 +247,7 @@ class AnthropicFallbackExecutor(BaseExecutor):
         for iteration in range(max_iterations):
             if self._check_interrupted():
                 logger.info("Anthropic execute interrupted at iteration=%d", iteration)
+                await _close_client_quietly(client)
                 return ExecutionResult(text="[Session interrupted by user]")
 
             is_final_iteration = (
@@ -291,9 +300,11 @@ class AnthropicFallbackExecutor(BaseExecutor):
                     retry_on=_anthropic_retryable_errors(),
                 )
             except LLMAPIError:
+                await _close_client_quietly(client)
                 raise
             except Exception as e:
                 logger.exception("Anthropic API error")
+                await _close_client_quietly(client)
                 raise LLMAPIError(f"Anthropic API error: {e}") from e
 
             # ── Context tracking + session chaining ───────────
@@ -363,6 +374,7 @@ class AnthropicFallbackExecutor(BaseExecutor):
                 final_reminder = self.reminder_queue.drain_formatted()
                 if final_reminder:
                     all_response_text.append(final_reminder)
+                await _close_client_quietly(client)
                 return ExecutionResult(
                     text="\n".join(all_response_text),
                     tool_call_records=all_tool_records,
@@ -414,6 +426,7 @@ class AnthropicFallbackExecutor(BaseExecutor):
                     messages[-1]["content"] += "\n\n" + formatted
 
         logger.warning("Max iterations (%d) reached, returning fallback response", max_iterations)
+        await _close_client_quietly(client)
         return ExecutionResult(
             text="\n".join(all_response_text) or "(max iterations reached)",
             tool_call_records=all_tool_records,
@@ -444,6 +457,27 @@ class AnthropicFallbackExecutor(BaseExecutor):
         externally for streaming paths.
         """
         client = self._build_client()
+        try:
+            async for event in self._execute_streaming_inner(
+                client, system_prompt, prompt, tracker, images,
+                prior_messages, max_turns_override, trigger,
+            ):
+                yield event
+        finally:
+            await _close_client_quietly(client)
+
+    async def _execute_streaming_inner(
+        self,
+        client: Any,
+        system_prompt: str,
+        prompt: str,
+        tracker: ContextTracker,
+        images: list[ImageData] | None = None,
+        prior_messages: list[dict[str, Any]] | None = None,
+        max_turns_override: int | None = None,
+        trigger: str = "",
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        """Inner streaming logic — client lifecycle managed by caller."""
         tools = self._build_tools()
         context_window = self._resolve_cw()
         if prior_messages:

@@ -242,7 +242,7 @@ class AnimaRunner:
         Checks both ``chat`` and ``heartbeat`` session types, including
         thread-specific subdirectories.
         """
-        for session_type in ("chat", "heartbeat", "task_exec"):
+        for session_type in ("chat", "heartbeat", "task_exec", "inbox"):
             # Collect all thread_ids with orphaned journals
             thread_ids = StreamingJournal.list_orphan_thread_ids(self._anima_dir, session_type)
 
@@ -261,8 +261,8 @@ class AnimaRunner:
                     recovery.trigger,
                 )
 
-                # task_exec has no conversation history — just confirm and log
-                if session_type == "task_exec":
+                # task_exec/inbox have no conversation history — just confirm and log
+                if session_type in ("task_exec", "inbox"):
                     StreamingJournal.confirm_recovery(self._anima_dir, session_type, thread_id=thread_id)
                 elif recovery.recovered_text and self.anima:
                     try:
@@ -574,10 +574,24 @@ class AnimaRunner:
         """
         uptime = (now_jst() - ensure_aware(self._started_at)).total_seconds()
         status = "ok" if self._ready_event.is_set() else "initializing"
+        is_busy = False
+        if self.anima is not None:
+            try:
+                any_conversation_locked = any(
+                    lock.locked() for lock in self.anima._conversation_locks.values()
+                )
+                is_busy = (
+                    any_conversation_locked
+                    or self.anima._background_lock.locked()
+                    or self.anima._inbox_lock.locked()
+                )
+            except Exception:
+                logger.debug("Failed to compute ping busy status", exc_info=True)
         return {
             "status": status,
             "anima": self.anima_name,
             "uptime_sec": round(uptime, 1),
+            "is_busy": is_busy,
         }
 
     async def _handle_reload_config(self, params: dict[str, Any]) -> dict[str, Any]:
