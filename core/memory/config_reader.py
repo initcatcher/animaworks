@@ -67,6 +67,7 @@ class ConfigReader:
                 thinking_effort=resolved.thinking_effort,
                 llm_timeout=resolved.llm_timeout,
                 extra_keys=credential.keys or {},
+                mode_s_auth=resolved.mode_s_auth,
             )
 
         # Legacy fallback: parse config.md

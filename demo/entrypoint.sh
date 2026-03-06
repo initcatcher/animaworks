@@ -81,6 +81,16 @@ with open(cfg_path, 'w') as f:
     json.dump(cfg, f, indent=2, ensure_ascii=False)
 " "$CONFIG_JSON" "$overlay"
         echo "Config overlay applied."
+
+        # Re-merge templates with correct locale (init used default "ja")
+        # Remove locale-dependent dirs so merge_templates re-copies them
+        rm -rf "${DATA_DIR}/prompts" "${DATA_DIR}/common_knowledge" "${DATA_DIR}/common_skills"
+        python3 -c "
+from core.init import merge_templates
+from pathlib import Path
+merge_templates(Path('$DATA_DIR'))
+"
+        echo "Templates re-merged with locale from overlay."
     fi
 
     # 4b. Create auth.json (local_trust mode, no password)
@@ -139,6 +149,24 @@ AUTHEOF
     echo "=== Initialization complete ==="
 else
     echo "Existing configuration found — skipping initialization."
+fi
+
+# ── Inject API key & mode_s_auth into config ─────────────
+if [ -n "${ANTHROPIC_API_KEY:-}" ] && [ -f "$CONFIG_JSON" ]; then
+    python3 -c "
+import json, os, sys
+cfg_path = sys.argv[1]
+api_key = os.environ['ANTHROPIC_API_KEY']
+with open(cfg_path) as f:
+    cfg = json.load(f)
+creds = cfg.setdefault('credentials', {}).setdefault('anthropic', {})
+creds['type'] = 'api_key'
+creds['api_key'] = api_key
+cfg.setdefault('anima_defaults', {})['mode_s_auth'] = 'api'
+with open(cfg_path, 'w') as f:
+    json.dump(cfg, f, indent=2, ensure_ascii=False)
+" "$CONFIG_JSON"
+    echo "API key injected into config."
 fi
 
 # ── Start server ──────────────────────────────────────────
