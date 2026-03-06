@@ -186,6 +186,7 @@ class CycleMixin:
             priming_section=priming_section,
             mode=mode,
             trigger=trigger,
+            pending_human_notifications=pending_human_notifications,
         )
 
         if injected_procedures:
@@ -368,6 +369,7 @@ class CycleMixin:
             message=prompt,
             trigger=trigger,
             context_window=_ctx_window,
+            pending_human_notifications=pending_human_notifications,
         )
         if use_fallback:
             executor = self._create_fallback_executor()
@@ -455,6 +457,7 @@ class CycleMixin:
                     retriever=self._get_retriever(),
                     trigger=trigger,
                     context_window=_chain_cw,
+                    pending_human_notifications=pending_human_notifications,
                 ).system_prompt,
                 shortterm,
             )
@@ -619,6 +622,7 @@ class CycleMixin:
             priming_section=priming_section,
             mode=mode,
             trigger=trigger,
+            pending_human_notifications=pending_human_notifications,
         )
 
         if build_result.injected_procedures:
@@ -645,6 +649,7 @@ class CycleMixin:
             message=prompt,
             trigger=trigger,
             context_window=_ctx_window_s,
+            pending_human_notifications=pending_human_notifications,
         )
         if use_fallback:
             logger.warning("Streaming fallback: using blocking S Fallback for oversized prompt")
@@ -862,6 +867,7 @@ class CycleMixin:
                     retriever=self._get_retriever(),
                     trigger=trigger,
                     context_window=_ctx_window_s,
+                    pending_human_notifications=pending_human_notifications,
                 ).system_prompt
 
                 await asyncio.sleep(actual_delay)
@@ -929,6 +935,7 @@ class CycleMixin:
                     retriever=self._get_retriever(),
                     trigger=trigger,
                     context_window=_chain_cw,
+                    pending_human_notifications=pending_human_notifications,
                 ).system_prompt,
                 shortterm,
             )
