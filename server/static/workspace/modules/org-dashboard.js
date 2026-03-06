@@ -581,15 +581,14 @@ async function _loadKpiStats() {
     const resp = await fetch("/api/activity/recent?hours=1&limit=200");
     if (resp.ok) {
       const data = await resp.json();
-      const items = Array.isArray(data) ? data : (data.events || []);
-      _kpiEventsH = String(items.length);
+      _kpiEventsH = String((data.events ?? []).length);
     }
   } catch { /* ignore */ }
   try {
     const resp = await fetch("/api/tasks/summary");
     if (resp.ok) {
       const data = await resp.json();
-      _kpiTasks = String(data.pending || 0);
+      _kpiTasks = String(data.total_active || 0);
     }
   } catch { /* ignore */ }
   _applyKpiValues();
@@ -613,24 +612,29 @@ function _stopKpiPolling() {
 }
 
 async function _loadInitialStreams(animas) {
-  for (const a of animas) {
-    try {
+  const results = await Promise.allSettled(
+    animas.map(async (a) => {
       const resp = await fetch(`/api/activity/recent?hours=1&limit=5&anima=${encodeURIComponent(a.name)}`);
-      if (!resp.ok) continue;
+      if (!resp.ok) return null;
       const data = await resp.json();
-      const events = Array.isArray(data) ? data : (data.events || []);
-      if (!events.length) continue;
-      const entries = events.slice(0, MAX_STREAM_ENTRIES).reverse().map(ev => ({
-        id: ev.id || String(Date.now() + Math.random()),
-        type: _mapEventType(ev.type || ev.name),
-        text: _summarizeEvent(ev),
-        status: "done",
-        ts: ev.timestamp ? new Date(ev.timestamp).getTime() : Date.now(),
-      }));
-      _cardStreams.set(a.name, entries);
-      const streamEl = document.getElementById(`orgStream_${CSS.escape(a.name)}`);
-      if (streamEl) _renderStream(streamEl, entries.slice(-MAX_STREAM_ENTRIES));
-    } catch { /* ignore */ }
+      const events = data.events ?? [];
+      if (!events.length) return null;
+      return { name: a.name, events };
+    })
+  );
+  for (const r of results) {
+    if (r.status !== "fulfilled" || !r.value) continue;
+    const { name, events } = r.value;
+    const entries = events.slice(0, MAX_STREAM_ENTRIES).reverse().map(ev => ({
+      id: ev.id || String(Date.now() + Math.random()),
+      type: _mapEventType(ev.type || ev.name),
+      text: _summarizeEvent(ev),
+      status: "done",
+      ts: (ev.ts || ev.timestamp) ? new Date(ev.ts || ev.timestamp).getTime() : Date.now(),
+    }));
+    _cardStreams.set(name, entries);
+    const streamEl = document.getElementById(`orgStream_${CSS.escape(name)}`);
+    if (streamEl) _renderStream(streamEl, entries.slice(-MAX_STREAM_ENTRIES));
   }
 }
 

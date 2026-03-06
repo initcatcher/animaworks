@@ -348,14 +348,16 @@ def create_system_router() -> APIRouter:
     @router.get("/tasks/summary")
     async def get_tasks_summary(request: Request):
         """Aggregate pending task counts across all animas."""
+        import asyncio
+
         animas_dir = request.app.state.animas_dir
         anima_names = request.app.state.anima_names
-        pending = 0
-        in_progress = 0
-        for name in anima_names:
+
+        def _count_tasks(name: str) -> tuple[int, int]:
             tq_path = animas_dir / name / "state" / "task_queue.jsonl"
             if not tq_path.exists():
-                continue
+                return (0, 0)
+            pend = prog = 0
             try:
                 for raw_line in tq_path.read_text(encoding="utf-8").splitlines():
                     raw_line = raw_line.strip()
@@ -367,11 +369,18 @@ def create_system_router() -> APIRouter:
                         continue
                     st = entry.get("status", "")
                     if st in ("pending", "delegated"):
-                        pending += 1
+                        pend += 1
                     elif st == "in_progress":
-                        in_progress += 1
+                        prog += 1
             except OSError:
-                continue
+                pass
+            return (pend, prog)
+
+        results = await asyncio.gather(
+            *(asyncio.to_thread(_count_tasks, n) for n in anima_names)
+        )
+        pending = sum(r[0] for r in results)
+        in_progress = sum(r[1] for r in results)
         return {"pending": pending, "in_progress": in_progress, "total_active": pending + in_progress}
 
     # ── Activity ───────────────────────────────────────────
