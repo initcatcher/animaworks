@@ -59,7 +59,8 @@ class TestCreateSkillDirectory:
 
     def test_path_traversal_skill_name(self, tmp_path):
         result = create_skill_directory("../evil", "desc", "body", tmp_path)
-        assert "無効" in result
+        assert "../evil" in result
+        assert not (tmp_path / "../evil").exists()
 
     def test_path_traversal_reference_filename(self, tmp_path):
         refs = [{"filename": "../../etc/passwd", "content": "evil"}]

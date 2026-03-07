@@ -12,6 +12,8 @@ from typing import Any
 
 import yaml
 
+from core.i18n import t
+
 logger = logging.getLogger("animaworks.skill_creator")
 
 
@@ -35,7 +37,7 @@ def create_skill_directory(
 ) -> str:
     """Create skill directory structure with SKILL.md and optional sub-files."""
     if "/" in skill_name or "\\" in skill_name or ".." in skill_name:
-        return f"無効なスキル名: '{skill_name}'（パス区切り文字は使用不可）"
+        return t("skill_creator.invalid_name", skill_name=skill_name)
 
     skill_dir = base_dir / skill_name
     skill_dir.mkdir(parents=True, exist_ok=True)
@@ -71,4 +73,4 @@ def create_skill_directory(
                 created_files.append(f"templates/{fname}")
 
     files_str = ", ".join(created_files)
-    return f"スキル '{skill_name}' を作成しました: {skill_dir}\n作成ファイル: {files_str}"
+    return t("skill_creator.created", skill_name=skill_name, skill_dir=skill_dir, files_str=files_str)

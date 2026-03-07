@@ -1715,6 +1715,75 @@ _STRINGS: dict[str, dict[str, str]] = {
     "skill.type_common": {"ja": "共通", "en": "common"},
     "skill.type_personal": {"ja": "個人", "en": "personal"},
     "skill.type_procedure": {"ja": "手順", "en": "procedure"},
+    # ── voice/session.py ──
+    "voice.mode_suffix": {
+        "ja": (
+            "\n\n[voice-mode: 音声会話です。話し言葉で200文字以内で簡潔に回答してください。"
+            "Markdown記法（見出し・太字・リスト・コードブロック等）は使わないでください]"
+        ),
+        "en": (
+            "\n\n[voice-mode: This is a voice conversation. Reply concisely in spoken language, "
+            "200 characters or fewer. Do not use Markdown formatting (headings, bold, lists, code blocks, etc.)]"
+        ),
+    },
+    # ── supervisor/scheduler_manager.py ──
+    "scheduler.cron_fallback_description": {
+        "ja": "cron.mdの「{task_name}」の指示に従って処理してください。",
+        "en": "Follow the instructions for '{task_name}' in cron.md.",
+    },
+    # ── _anima_inbox.py ──
+    "inbox.reply_placeholder": {"ja": "{返信内容}", "en": "{reply_content}"},
+    # ── cascade_limiter.py ──
+    "cascade.activity_read_failed": {
+        "ja": "GlobalOutboundLimitExceeded: アクティビティログ読み取り失敗のため送信をブロックしました",
+        "en": "GlobalOutboundLimitExceeded: Sending blocked because the activity log could not be read",
+    },
+    "cascade.hourly_reset_at": {
+        "ja": " 次の送信可能時刻（目安）: {reset_time}",
+        "en": " Estimated next send time: {reset_time}",
+    },
+    "cascade.hourly_limit": {
+        "ja": (
+            "GlobalOutboundLimitExceeded: 1時間あたりの送信上限"
+            "（{max_per_hour}通）に到達しています"
+            "（現在{hourly_count}通/1h, {daily_count}通/24h）。"
+            "{reset_at}"
+            " このターンではsend_messageを使わず、送信内容を"
+            "current_task.mdに記録して次のセッションで送信してください。"
+        ),
+        "en": (
+            "GlobalOutboundLimitExceeded: Hourly send limit "
+            "({max_per_hour} messages) reached "
+            "({hourly_count} msgs/1h, {daily_count} msgs/24h).{reset_at}"
+            " Do not use send_message this turn. Record the message content in "
+            "current_task.md and send it in the next session."
+        ),
+    },
+    "cascade.daily_limit": {
+        "ja": (
+            "GlobalOutboundLimitExceeded: 24時間あたりの送信上限"
+            "（{max_per_day}通）に到達しています"
+            "（現在{daily_count}通/24h）。"
+            " このターンではsend_messageを使わず、送信内容を"
+            "current_task.mdに記録して次のセッションで送信してください。"
+        ),
+        "en": (
+            "GlobalOutboundLimitExceeded: Daily send limit "
+            "({max_per_day} messages) reached "
+            "({daily_count} msgs/24h)."
+            " Do not use send_message this turn. Record the message content in "
+            "current_task.md and send it in the next session."
+        ),
+    },
+    # ── tooling/skill_creator.py ──
+    "skill_creator.invalid_name": {
+        "ja": "無効なスキル名: '{skill_name}'（パス区切り文字は使用不可）",
+        "en": "Invalid skill name: '{skill_name}' (path separators are not allowed)",
+    },
+    "skill_creator.created": {
+        "ja": "スキル '{skill_name}' を作成しました: {skill_dir}\n作成ファイル: {files_str}",
+        "en": "Skill '{skill_name}' created: {skill_dir}\nCreated files: {files_str}",
+    },
 }
 
 
