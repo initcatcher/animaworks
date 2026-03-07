@@ -12,6 +12,9 @@ adhering to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - skip CLAUDE.md test when file absent (public repo CI)
 - add Slack icon_url/username to all outbound message routes
 
+### Other
+- Full commit history now available — originally published as a squashed snapshot; complete development history (1,800+ commits) is now visible
+
 ## [0.5.1] - 2026-03-06
 
 
