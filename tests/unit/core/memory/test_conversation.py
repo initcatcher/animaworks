@@ -8,6 +8,8 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from pathlib import Path
+
+from core.time_utils import today_local
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -197,7 +199,7 @@ class TestTranscript:
 class TestWriteTranscript:
     def test_basic_write(self, conv, anima_dir):
         conv.write_transcript("human", "Hello world", from_person="admin")
-        today = __import__("datetime").date.today().isoformat()
+        today = today_local().isoformat()
         path = anima_dir / "transcripts" / f"{today}.jsonl"
         assert path.exists()
         entries = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -212,7 +214,7 @@ class TestWriteTranscript:
         conv.write_transcript("assistant", "A1")
         conv.write_transcript("human", "Q2", from_person="user")
         conv.write_transcript("assistant", "A2")
-        today = __import__("datetime").date.today().isoformat()
+        today = today_local().isoformat()
         path = anima_dir / "transcripts" / f"{today}.jsonl"
         entries = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
         assert len(entries) == 4
@@ -221,35 +223,35 @@ class TestWriteTranscript:
 
     def test_thread_id_included(self, conv, anima_dir):
         conv.write_transcript("human", "threaded", thread_id="thread-123")
-        today = __import__("datetime").date.today().isoformat()
+        today = today_local().isoformat()
         path = anima_dir / "transcripts" / f"{today}.jsonl"
         entry = json.loads(path.read_text(encoding="utf-8").strip())
         assert entry["thread_id"] == "thread-123"
 
     def test_default_thread_id_omitted(self, conv, anima_dir):
         conv.write_transcript("human", "default thread")
-        today = __import__("datetime").date.today().isoformat()
+        today = today_local().isoformat()
         path = anima_dir / "transcripts" / f"{today}.jsonl"
         entry = json.loads(path.read_text(encoding="utf-8").strip())
         assert "thread_id" not in entry
 
     def test_attachments_included(self, conv, anima_dir):
         conv.write_transcript("human", "with image", attachments=["attachments/img.png"])
-        today = __import__("datetime").date.today().isoformat()
+        today = today_local().isoformat()
         path = anima_dir / "transcripts" / f"{today}.jsonl"
         entry = json.loads(path.read_text(encoding="utf-8").strip())
         assert entry["attachments"] == ["attachments/img.png"]
 
     def test_tool_names_included(self, conv, anima_dir):
         conv.write_transcript("assistant", "done", tool_names=["web_search", "read_file"])
-        today = __import__("datetime").date.today().isoformat()
+        today = today_local().isoformat()
         path = anima_dir / "transcripts" / f"{today}.jsonl"
         entry = json.loads(path.read_text(encoding="utf-8").strip())
         assert entry["tool_names"] == ["web_search", "read_file"]
 
     def test_empty_optional_fields_omitted(self, conv, anima_dir):
         conv.write_transcript("assistant", "plain response")
-        today = __import__("datetime").date.today().isoformat()
+        today = today_local().isoformat()
         path = anima_dir / "transcripts" / f"{today}.jsonl"
         entry = json.loads(path.read_text(encoding="utf-8").strip())
         assert "from" not in entry
@@ -267,7 +269,7 @@ class TestWriteTranscript:
     def test_roundtrip_with_load(self, conv, anima_dir):
         conv.write_transcript("human", "question", from_person="admin")
         conv.write_transcript("assistant", "answer")
-        today = __import__("datetime").date.today().isoformat()
+        today = today_local().isoformat()
         messages = conv.load_transcript(today)
         assert len(messages) == 2
         assert messages[0]["role"] == "human"
@@ -278,7 +280,7 @@ class TestWriteTranscript:
     def test_content_not_truncated(self, conv, anima_dir):
         long_content = "x" * 20000
         conv.write_transcript("human", long_content)
-        today = __import__("datetime").date.today().isoformat()
+        today = today_local().isoformat()
         path = anima_dir / "transcripts" / f"{today}.jsonl"
         entry = json.loads(path.read_text(encoding="utf-8").strip())
         assert len(entry["content"]) == 20000
