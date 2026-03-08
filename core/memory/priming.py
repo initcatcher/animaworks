@@ -796,6 +796,15 @@ class PrimingEngine:
                 return ("", "")
             anima_name = self.anima_dir.name
 
+            # Load min_score from config
+            _min_score: float | None = None
+            try:
+                from core.config.models import load_config as _load_cfg
+
+                _min_score = _load_cfg().rag.min_retrieval_score
+            except Exception:
+                pass
+
             # Vector search (personal + shared common_knowledge)
             results = retriever.search(
                 query=query,
@@ -803,6 +812,7 @@ class PrimingEngine:
                 memory_type="knowledge",
                 top_k=5,
                 include_shared=True,
+                min_score=_min_score,
             )
 
             # Filter to overflow files if restriction is specified
@@ -1012,11 +1022,21 @@ class PrimingEngine:
                 return ""
             anima_name = self.anima_dir.name
 
+            # Load min_score from config
+            _min_score: float | None = None
+            try:
+                from core.config.models import load_config as _load_cfg
+
+                _min_score = _load_cfg().rag.min_retrieval_score
+            except Exception:
+                pass
+
             results = retriever.search(
                 query=query,
                 anima_name=anima_name,
                 memory_type="episodes",
                 top_k=3,
+                min_score=_min_score,
             )
 
             if not results:

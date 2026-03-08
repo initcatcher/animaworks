@@ -168,6 +168,7 @@ class RAGConfig(BaseModel):
     graph_cache_enabled: bool = True
     implicit_link_threshold: float = 0.75
     spreading_memory_types: list[str] = ["knowledge", "episodes"]
+    min_retrieval_score: float = 0.3
 
 
 class PrimingConfig(BaseModel):

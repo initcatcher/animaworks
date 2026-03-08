@@ -13,12 +13,13 @@ from unittest.mock import patch
 import pytest
 
 from core.config.models import (
+    AnimaDefaults,
+    AnimaModelConfig,
     AnimaWorksConfig,
     CredentialConfig,
     GatewaySystemConfig,
     ImageGenConfig,
-    AnimaDefaults,
-    AnimaModelConfig,
+    RAGConfig,
     SystemConfig,
     WorkerSystemConfig,
     _match_pattern_table,
@@ -29,11 +30,10 @@ from core.config.models import (
     load_model_config,
     read_anima_supervisor,
     register_anima_in_config,
-    resolve_execution_mode,
     resolve_anima_config,
+    resolve_execution_mode,
     save_config,
 )
-
 
 # ── Pydantic model defaults ──────────────────────────────
 
@@ -144,12 +144,27 @@ class TestImageGenConfig:
         assert config.image_gen.style_reference is None
 
 
+class TestRAGConfig:
+    """RAGConfig defaults and overrides."""
+
+    def test_min_retrieval_score_default(self) -> None:
+        """RAGConfig.min_retrieval_score defaults to 0.3."""
+        rag = RAGConfig()
+        assert rag.min_retrieval_score == 0.3
+
+    def test_min_retrieval_score_override(self) -> None:
+        """RAGConfig.min_retrieval_score can be overridden."""
+        rag = RAGConfig(min_retrieval_score=0.5)
+        assert rag.min_retrieval_score == 0.5
+
+
 # ── Cache management ──────────────────────────────────────
 
 
 class TestInvalidateCache:
     def test_invalidate_clears(self):
         from core.config import models
+
         models._config = AnimaWorksConfig()
         models._config_path = Path("/fake")
         models._config_mtime = 99.0
@@ -193,6 +208,7 @@ class TestLoadConfigMtimeReload:
 
         # Bump mtime by rewriting with different content
         import time
+
         time.sleep(0.05)
         self._write_config(path, animas={"bob": {"supervisor": "alice"}})
         os.utime(path)
@@ -210,6 +226,7 @@ class TestLoadConfigMtimeReload:
         # Remove file — stat() will fail
         path.unlink()
         from core.config import models
+
         # Set mtime to 0.0 to simulate OSError path matching
         models._config_mtime = 0.0
         c2 = load_config(path)
@@ -219,6 +236,7 @@ class TestLoadConfigMtimeReload:
     def test_save_config_records_mtime(self, tmp_path):
         """save_config() stores the file's mtime in _config_mtime."""
         from core.config import models
+
         path = tmp_path / "config.json"
         save_config(AnimaWorksConfig(), path)
         assert models._config_mtime > 0.0
@@ -265,6 +283,7 @@ class TestLoadConfig:
 
     def test_invalid_json_raises(self, tmp_path):
         from core.exceptions import ConfigError
+
         bad = tmp_path / "bad.json"
         bad.write_text("not json at all", encoding="utf-8")
         with pytest.raises(ConfigError, match="Invalid JSON"):
@@ -279,9 +298,7 @@ class TestLoadConfig:
             "anima_defaults": {"model": "claude-sonnet-4-6", "credential": "anthropic"},
             "animas": {"alice": {"supervisor": "bob", "speciality": "engineer"}},
         }
-        (data_dir / "config.json").write_text(
-            json.dumps(config_data), encoding="utf-8"
-        )
+        (data_dir / "config.json").write_text(json.dumps(config_data), encoding="utf-8")
         invalidate_cache()
         config = load_config(data_dir / "config.json")
         assert "alice" in config.animas
@@ -321,6 +338,7 @@ class TestSaveConfig:
         save_config(config, path)
         # Should be cached now
         from core.config import models
+
         assert models._config is config
         assert models._config_path == path
 
@@ -503,6 +521,7 @@ class TestResolveExecutionModeWildcard:
         """
         import core.config.models as _m
         from core.config.models import invalidate_models_json_cache
+
         invalidate_models_json_cache()
         monkeypatch.setattr(_m, "_load_models_json", lambda: {})
         yield
@@ -628,7 +647,8 @@ class TestLoadModelConfig:
             "animas": {"alice": {}},
         }
         (data_dir / "config.json").write_text(
-            _json.dumps(config_data), encoding="utf-8",
+            _json.dumps(config_data),
+            encoding="utf-8",
         )
         invalidate_cache()
 
@@ -656,7 +676,8 @@ class TestLoadModelConfig:
             "animas": {"bob": {}},
         }
         (data_dir / "config.json").write_text(
-            _json.dumps(config_data), encoding="utf-8",
+            _json.dumps(config_data),
+            encoding="utf-8",
         )
         invalidate_cache()
 
@@ -682,7 +703,8 @@ class TestReadAnimaSupervisor:
         anima_dir = tmp_path / "alice"
         anima_dir.mkdir()
         (anima_dir / "status.json").write_text(
-            json.dumps({"supervisor": "bob"}), encoding="utf-8",
+            json.dumps({"supervisor": "bob"}),
+            encoding="utf-8",
         )
         assert read_anima_supervisor(anima_dir) == "bob"
 
@@ -691,7 +713,8 @@ class TestReadAnimaSupervisor:
         anima_dir = tmp_path / "alice"
         anima_dir.mkdir()
         (anima_dir / "identity.md").write_text(
-            "| 上司 | charlie |\n", encoding="utf-8",
+            "| 上司 | charlie |\n",
+            encoding="utf-8",
         )
         assert read_anima_supervisor(anima_dir) == "charlie"
 
@@ -700,10 +723,12 @@ class TestReadAnimaSupervisor:
         anima_dir = tmp_path / "alice"
         anima_dir.mkdir()
         (anima_dir / "status.json").write_text(
-            json.dumps({"supervisor": "bob"}), encoding="utf-8",
+            json.dumps({"supervisor": "bob"}),
+            encoding="utf-8",
         )
         (anima_dir / "identity.md").write_text(
-            "| 上司 | charlie |\n", encoding="utf-8",
+            "| 上司 | charlie |\n",
+            encoding="utf-8",
         )
         assert read_anima_supervisor(anima_dir) == "bob"
 
@@ -712,7 +737,8 @@ class TestReadAnimaSupervisor:
         anima_dir = tmp_path / "alice"
         anima_dir.mkdir()
         (anima_dir / "status.json").write_text(
-            json.dumps({"supervisor": "なし"}), encoding="utf-8",
+            json.dumps({"supervisor": "なし"}),
+            encoding="utf-8",
         )
         assert read_anima_supervisor(anima_dir) is None
 
@@ -727,7 +753,8 @@ class TestReadAnimaSupervisor:
         anima_dir = tmp_path / "hinata"
         anima_dir.mkdir()
         (anima_dir / "identity.md").write_text(
-            "| 上司 | 琴葉（kotoha） |\n", encoding="utf-8",
+            "| 上司 | 琴葉（kotoha） |\n",
+            encoding="utf-8",
         )
         assert read_anima_supervisor(anima_dir) == "kotoha"
 
@@ -737,7 +764,8 @@ class TestReadAnimaSupervisor:
         anima_dir.mkdir()
         (anima_dir / "status.json").write_text("bad json", encoding="utf-8")
         (anima_dir / "identity.md").write_text(
-            "| 上司 | bob |\n", encoding="utf-8",
+            "| 上司 | bob |\n",
+            encoding="utf-8",
         )
         assert read_anima_supervisor(anima_dir) == "bob"
 
@@ -746,10 +774,12 @@ class TestReadAnimaSupervisor:
         anima_dir = tmp_path / "alice"
         anima_dir.mkdir()
         (anima_dir / "status.json").write_text(
-            json.dumps({"supervisor": ""}), encoding="utf-8",
+            json.dumps({"supervisor": ""}),
+            encoding="utf-8",
         )
         (anima_dir / "identity.md").write_text(
-            "| 上司 | bob |\n", encoding="utf-8",
+            "| 上司 | bob |\n",
+            encoding="utf-8",
         )
         assert read_anima_supervisor(anima_dir) == "bob"
 
@@ -776,7 +806,8 @@ class TestRegisterAnimaInConfig:
         anima_dir = data_dir / "animas" / "alice"
         anima_dir.mkdir(parents=True)
         (anima_dir / "status.json").write_text(
-            json.dumps({"supervisor": "bob"}), encoding="utf-8",
+            json.dumps({"supervisor": "bob"}),
+            encoding="utf-8",
         )
 
         register_anima_in_config(data_dir, "alice")
@@ -792,7 +823,8 @@ class TestRegisterAnimaInConfig:
         config_path = data_dir / "config.json"
         cfg = AnimaWorksConfig()
         cfg.animas["alice"] = AnimaModelConfig(
-            supervisor="charlie", speciality="engineer",
+            supervisor="charlie",
+            speciality="engineer",
         )
         save_config(cfg, config_path)
         invalidate_cache()
@@ -800,7 +832,8 @@ class TestRegisterAnimaInConfig:
         anima_dir = data_dir / "animas" / "alice"
         anima_dir.mkdir(parents=True)
         (anima_dir / "status.json").write_text(
-            json.dumps({"supervisor": "bob"}), encoding="utf-8",
+            json.dumps({"supervisor": "bob"}),
+            encoding="utf-8",
         )
 
         register_anima_in_config(data_dir, "alice")

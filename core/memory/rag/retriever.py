@@ -88,6 +88,7 @@ class MemoryRetriever:
         *,
         include_shared: bool = False,
         include_superseded: bool = False,
+        min_score: float | None = None,
     ) -> list[RetrievalResult]:
         """Perform dense vector search with temporal decay.
 
@@ -104,6 +105,10 @@ class MemoryRetriever:
             include_superseded: If False (default), exclude knowledge that has
                 been superseded (``valid_until`` is non-empty). Set to True
                 to include all knowledge regardless of validity.
+            min_score: If set, filter out results whose raw vector similarity
+                score (before temporal decay / frequency boost) is below this
+                threshold.  ``None`` (default) disables filtering.  Spreading
+                activation results (no ``"vector"`` key) are never filtered.
 
         Returns:
             List of retrieval results sorted by combined score
@@ -177,6 +182,10 @@ class MemoryRetriever:
 
         # 3. Apply temporal decay and frequency boost
         results = self._apply_score_adjustments(results)
+
+        # 3b. Filter by minimum vector score
+        if min_score is not None:
+            results = [r for r in results if r.source_scores.get("vector", 1.0) >= min_score]
 
         # 4. Sort & top_k
         results.sort(key=lambda r: r.score, reverse=True)
