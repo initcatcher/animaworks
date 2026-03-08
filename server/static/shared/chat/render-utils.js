@@ -8,13 +8,13 @@ import { t } from "../i18n.js";
 // via requestAnimationFrame to smooth out bursty API token delivery.
 // Adapts display speed dynamically based on measured incoming chunk rate.
 
-const _DEFAULT_CHAR_INTERVAL_MS = 8;
-const _MIN_CHAR_INTERVAL_MS = 2;
-const _MAX_CHAR_INTERVAL_MS = 30;
-const _CATCHUP_THRESHOLD_FAST = 200;
-const _CATCHUP_THRESHOLD_MED = 100;
+const _DEFAULT_CHAR_INTERVAL_MS = 14;
+const _MIN_CHAR_INTERVAL_MS = 4;
+const _MAX_CHAR_INTERVAL_MS = 45;
+const _CATCHUP_THRESHOLD_FAST = 300;
+const _CATCHUP_THRESHOLD_MED = 150;
 const _RATE_WINDOW_SIZE = 6;
-const _RATE_DRAIN_FACTOR = 0.7;
+const _RATE_DRAIN_FACTOR = 2;
 
 export class TextAnimator {
   /**

@@ -76,8 +76,28 @@ class TestTextAnimatorClass:
         assert "_CATCHUP_THRESHOLD_FAST" in render_utils_src
         assert "_CATCHUP_THRESHOLD_MED" in render_utils_src
 
+    def test_has_adaptive_rate(self, render_utils_src: str):
+        assert "_adaptRate" in render_utils_src
+        assert "_pushHistory" in render_utils_src
+        assert "_RATE_WINDOW_SIZE" in render_utils_src
+        assert "_RATE_DRAIN_FACTOR" in render_utils_src
+
+    def test_push_records_history(self, render_utils_src: str):
+        assert "this._pushHistory.push(" in render_utils_src
+
+    def test_rate_has_bounds(self, render_utils_src: str):
+        assert "_MIN_CHAR_INTERVAL_MS" in render_utils_src
+        assert "_MAX_CHAR_INTERVAL_MS" in render_utils_src
+
 
 # ── Render Utils Integration ───────────────────────────────
+
+
+class TestRenderUtilsThinkingDisplayText:
+    """_renderThinkingZoneContent uses _displayThinkingText."""
+
+    def test_thinking_zone_uses_display_thinking_text(self, render_utils_src: str):
+        assert "msg._displayThinkingText || msg.thinkingText" in render_utils_src
 
 
 class TestRenderUtilsDisplayText:
@@ -145,6 +165,21 @@ class TestWorkspaceTextAnimatorIntegration:
         assert "resumeBase" in ws_streaming_src
         assert "resumeBase + displayText" in ws_streaming_src
 
+    def test_thinking_animator_created(self, ws_streaming_src: str):
+        assert "_thinkingAnimator" in ws_streaming_src
+
+    def test_thinking_delta_pushes_to_animator(self, ws_streaming_src: str):
+        assert "_thinkingAnimator.push(t)" in ws_streaming_src or "_thinkingAnimator) _thinkingAnimator.push(t)" in ws_streaming_src
+
+    def test_thinking_end_flushes_animator(self, ws_streaming_src: str):
+        assert "_thinkingAnimator.flush()" in ws_streaming_src
+
+    def test_thinking_sets_display_text(self, ws_streaming_src: str):
+        assert "_displayThinkingText" in ws_streaming_src
+
+    def test_cleans_display_thinking_text_on_done(self, ws_streaming_src: str):
+        assert "delete streamingMsg._displayThinkingText" in ws_streaming_src
+
 
 # ── Chat Page Integration ──────────────────────────────────
 
@@ -205,3 +240,18 @@ class TestChatPageTextAnimatorIntegration:
         """Resume streams must composite recovered text + new animator output."""
         assert "resumeBase" in chat_streaming_src
         assert "resumeBase + displayText" in chat_streaming_src
+
+    def test_thinking_animator_created(self, chat_streaming_src: str):
+        assert "_thinkingAnimator" in chat_streaming_src
+
+    def test_thinking_delta_pushes_to_animator(self, chat_streaming_src: str):
+        assert "_thinkingAnimator.push(text)" in chat_streaming_src or "_thinkingAnimator) _thinkingAnimator.push(text)" in chat_streaming_src
+
+    def test_thinking_end_flushes_animator(self, chat_streaming_src: str):
+        assert "_thinkingAnimator.flush()" in chat_streaming_src
+
+    def test_thinking_sets_display_text(self, chat_streaming_src: str):
+        assert "_displayThinkingText" in chat_streaming_src
+
+    def test_cleans_display_thinking_text_on_done(self, chat_streaming_src: str):
+        assert "delete streamingMsg._displayThinkingText" in chat_streaming_src
