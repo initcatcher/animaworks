@@ -340,6 +340,7 @@ def ensure_runtime_dir(*, skip_animas: bool = False) -> Path:
             logger.exception("Person-to-Anima migration failed")
         _maybe_migrate_config(data_dir)
         _sync_shared_templates(data_dir)
+        _ensure_runtime_only_dirs(data_dir)
         logger.debug("Runtime directory already initialized: %s", data_dir)
         return data_dir
 
@@ -550,6 +551,19 @@ def reset_runtime_dir(data_dir: Path, *, skip_animas: bool = False) -> Path:
 def _ensure_runtime_only_dirs(data_dir: Path) -> None:
     """Create runtime-only directories that have no template counterpart."""
     (data_dir / "animas").mkdir(parents=True, exist_ok=True)
+
+    # Generate default .ragignore if not present
+    ragignore_path = data_dir / ".ragignore"
+    if not ragignore_path.exists():
+        ragignore_path.write_text(
+            "# Files excluded from RAG indexing\n"
+            "# Patterns use fnmatch syntax (like gitignore)\n"
+            "# Lines starting with # are comments\n"
+            "\n"
+            "# Index/TOC files (already referenced in system prompt)\n"
+            "00_index.md\n",
+            encoding="utf-8",
+        )
     inbox_dir = data_dir / "shared" / "inbox"
     inbox_dir.mkdir(parents=True, exist_ok=True)
     try:

@@ -13,6 +13,7 @@ Handles:
 - Metadata extraction (tags, importance, timestamps)
 """
 
+import fnmatch
 import hashlib
 import json
 import logging
@@ -20,7 +21,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from core.time_utils import ensure_aware, now_iso
 
@@ -114,6 +115,41 @@ class MemoryIndexer:
             logger.warning("Failed to load index metadata: %s", e)
             return {}
 
+    _ragignore_cache: ClassVar[tuple[float, list[str]] | None] = None
+
+    @classmethod
+    def _load_ragignore(cls) -> list[str]:
+        """Load .ragignore patterns from data_dir with mtime caching."""
+        from core.paths import get_data_dir
+
+        ragignore_path = get_data_dir() / ".ragignore"
+        if not ragignore_path.is_file():
+            return []
+        try:
+            mtime = ragignore_path.stat().st_mtime
+            if cls._ragignore_cache and cls._ragignore_cache[0] == mtime:
+                return cls._ragignore_cache[1]
+            patterns = []
+            for line in ragignore_path.read_text(encoding="utf-8").splitlines():
+                stripped = line.strip()
+                if stripped and not stripped.startswith("#"):
+                    patterns.append(stripped)
+            cls._ragignore_cache = (mtime, patterns)
+            return patterns
+        except Exception as e:
+            logger.warning("Failed to load .ragignore: %s", e)
+            return []
+
+    @classmethod
+    def is_ragignored(cls, file_path: Path) -> bool:
+        """Check if a file matches any .ragignore pattern."""
+        patterns = cls._load_ragignore()
+        if not patterns:
+            return False
+        name = file_path.name
+        rel_str = str(file_path).replace("\\", "/")
+        return any(fnmatch.fnmatch(name, p) or fnmatch.fnmatch(rel_str, p) for p in patterns)
+
     def _save_index_meta(self) -> None:
         """Save index metadata."""
         try:
@@ -145,6 +181,11 @@ class MemoryIndexer:
         """
         if not file_path.exists():
             logger.warning("File not found: %s", file_path)
+            return 0
+
+        # Check .ragignore exclusion
+        if self.is_ragignored(file_path):
+            logger.debug("Skipping ragignored file: %s", file_path)
             return 0
 
         # Check if file has changed

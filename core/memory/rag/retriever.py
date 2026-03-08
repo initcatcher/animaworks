@@ -88,6 +88,7 @@ class MemoryRetriever:
         *,
         include_shared: bool = False,
         include_superseded: bool = False,
+        min_score: float | None = None,
     ) -> list[RetrievalResult]:
         """Perform dense vector search with temporal decay.
 
@@ -177,6 +178,10 @@ class MemoryRetriever:
 
         # 3. Apply temporal decay and frequency boost
         results = self._apply_score_adjustments(results)
+
+        # 3b. Filter by minimum vector score
+        if min_score is not None:
+            results = [r for r in results if r.source_scores.get("vector", 1.0) >= min_score]
 
         # 4. Sort & top_k
         results.sort(key=lambda r: r.score, reverse=True)
