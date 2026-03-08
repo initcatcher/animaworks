@@ -430,12 +430,13 @@ class SkillsToolsMixin:
                 "description": t["description"],
                 "parallel": t.get("parallel", False),
                 "depends_on": t.get("depends_on", []),
+                "context": t.get("context", ""),
                 "acceptance_criteria": t.get("acceptance_criteria", []),
                 "constraints": t.get("constraints", []),
                 "file_paths": t.get("file_paths", []),
                 "submitted_by": self._anima_name,
                 "submitted_at": now_iso,
-                "reply_to": self._anima_name,
+                "reply_to": t.get("reply_to", self._anima_name),
             }
             path = pending_dir / f"{t['task_id']}.json"
             path.write_text(
