@@ -118,18 +118,18 @@ def _available_models() -> list[dict[str, str]]:
     return models
 
 
-_MAX_TIMELINE_CHARS = 250_000
+_MAX_TIMELINE_CHARS = 280_000
 
 
 def _truncate_timeline(text: str) -> str:
-    """Truncate timeline text to fit within LLM context window."""
+    """Last-resort truncation if budget-aware thinning was insufficient."""
     if len(text) <= _MAX_TIMELINE_CHARS:
         return text
     truncated = text[:_MAX_TIMELINE_CHARS]
     last_nl = truncated.rfind("\n")
     if last_nl > 0:
         truncated = truncated[:last_nl]
-    return truncated + "\n\n... (以降省略 / truncated) ..."
+    return truncated + "\n\n... (truncated) ..."
 
 
 async def _generate_narrative(timeline_text: str, model: str) -> str | None:
@@ -208,9 +208,12 @@ def create_activity_report_router() -> APIRouter:
 
         from core.audit import collect_org_audit, generate_org_timeline
 
+        def _gen_timeline() -> str:
+            return generate_org_timeline(req.date, max_chars=_MAX_TIMELINE_CHARS)
+
         report, timeline_text = await asyncio.gather(
             collect_org_audit(req.date),
-            asyncio.get_event_loop().run_in_executor(None, generate_org_timeline, req.date),
+            asyncio.get_event_loop().run_in_executor(None, _gen_timeline),
         )
         structured = report.to_dict()
 
