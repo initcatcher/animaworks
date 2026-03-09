@@ -112,6 +112,8 @@ def md_to_chatwork(text: str) -> str:
     if not text:
         return ""
 
+    text = text.replace("\x00", "")
+
     _placeholders: list[str] = []
 
     def _save(matched_text: str) -> str:
@@ -189,7 +191,7 @@ def md_to_chatwork(text: str) -> str:
         if line.strip().startswith("> "):
             quote_lines = []
             while i < len(lines) and lines[i].strip().startswith("> "):
-                quote_lines.append(re.sub(r"^>\s*", "", lines[i]))
+                quote_lines.append(re.sub(r"^>\s*", "", lines[i].strip()))
                 i += 1
             combined = "\n".join(quote_lines)
             out_lines.append(f"[qt]{combined}[/qt]")

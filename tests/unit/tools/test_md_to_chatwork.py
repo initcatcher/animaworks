@@ -203,6 +203,21 @@ class TestChatworkTagProtection:
         assert md_to_chatwork(md) == "[info][title]Notice[/title]Details here[/info]"
 
 
+class TestEdgeCases:
+    def test_whitespace_only(self):
+        assert md_to_chatwork("   ") == "   "
+
+    def test_null_byte_stripped(self):
+        result = md_to_chatwork("before\x00PH0\x00after")
+        assert "\x00" not in result
+        assert "PH0" in result
+
+    def test_blockquote_with_leading_whitespace(self):
+        md = "  > indented quote"
+        result = md_to_chatwork(md)
+        assert result == "[qt]indented quote[/qt]"
+
+
 class TestCombined:
     def test_realistic_message(self):
         md = (
