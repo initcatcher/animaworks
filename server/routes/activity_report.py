@@ -213,7 +213,7 @@ def create_activity_report_router() -> APIRouter:
 
         report, timeline_text = await asyncio.gather(
             collect_org_audit(req.date),
-            asyncio.get_event_loop().run_in_executor(None, _gen_timeline),
+            asyncio.get_running_loop().run_in_executor(None, _gen_timeline),
         )
         structured = report.to_dict()
 
