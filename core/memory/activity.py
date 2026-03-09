@@ -263,6 +263,8 @@ class ActivityLogger(
                         raw = json.loads(line)
                     except json.JSONDecodeError:
                         continue
+                    if "event" in raw and "type" not in raw:
+                        raw["type"] = raw.pop("event")
                     if type_set and raw.get("type") not in type_set:
                         continue
                     if involving and not self._involves(raw, involving):
