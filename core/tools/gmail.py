@@ -55,6 +55,7 @@ EXECUTION_PROFILE: dict[str, dict[str, object]] = {
     "read": {"expected_seconds": 10, "background_eligible": False},
     "draft": {"expected_seconds": 10, "background_eligible": False},
     "send": {"expected_seconds": 15, "background_eligible": False, "gated": True},
+    "download": {"expected_seconds": 30, "background_eligible": False},
 }
 
 # Gmail API scopes
@@ -559,8 +560,28 @@ class GmailClient:
                 error=str(e),
             )
 
+    def _collect_attachment_parts(self, parts: list[dict]) -> list[dict]:
+        """Recursively collect attachment parts from nested multipart structures.
+
+        Args:
+            parts: List of MIME parts from the email payload.
+
+        Returns:
+            Flat list of parts that have a filename and attachmentId.
+        """
+        result: list[dict] = []
+        for part in parts:
+            if part.get("filename") and part["body"].get("attachmentId"):
+                result.append(part)
+            if "parts" in part:
+                result.extend(self._collect_attachment_parts(part["parts"]))
+        return result
+
     def get_attachments(self, message_id: str, save_dir: Path) -> list[tuple[str, Path]]:
         """Download attachments from an email.
+
+        Handles nested multipart structures by recursively scanning
+        all MIME parts.
 
         Args:
             message_id: Email message ID.
@@ -573,30 +594,39 @@ class GmailClient:
             message = self.service.users().messages().get(userId="me", id=message_id, format="full").execute()
 
             save_dir.mkdir(parents=True, exist_ok=True)
-            attachments = []
+            attachments: list[tuple[str, Path]] = []
 
-            parts = message["payload"].get("parts", [])
-            for part in parts:
-                if part.get("filename") and part["body"].get("attachmentId"):
-                    filename = part["filename"]
-                    attachment_id = part["body"]["attachmentId"]
+            top_parts = message["payload"].get("parts", [])
+            attachment_parts = self._collect_attachment_parts(top_parts)
 
-                    attachment = (
-                        self.service.users()
-                        .messages()
-                        .attachments()
-                        .get(userId="me", messageId=message_id, id=attachment_id)
-                        .execute()
-                    )
+            for part in attachment_parts:
+                filename = part["filename"]
+                attachment_id = part["body"]["attachmentId"]
 
-                    data = base64.urlsafe_b64decode(attachment["data"])
-                    save_path = save_dir / filename
+                attachment = (
+                    self.service.users()
+                    .messages()
+                    .attachments()
+                    .get(userId="me", messageId=message_id, id=attachment_id)
+                    .execute()
+                )
 
-                    with open(save_path, "wb") as f:
-                        f.write(data)
+                data = base64.urlsafe_b64decode(attachment["data"])
+                save_path = save_dir / filename
 
-                    attachments.append((filename, save_path))
-                    logger.info("Attachment saved: %s", filename)
+                # Avoid overwriting files with duplicate names
+                counter = 1
+                while save_path.exists():
+                    stem = Path(filename).stem
+                    suffix = Path(filename).suffix
+                    save_path = save_dir / f"{stem}_{counter}{suffix}"
+                    counter += 1
+
+                with open(save_path, "wb") as f:
+                    f.write(data)
+
+                attachments.append((filename, save_path))
+                logger.info("Attachment saved: %s -> %s", filename, save_path)
 
             return attachments
 
@@ -633,8 +663,10 @@ animaworks-tool gmail read <メッセージID>
 animaworks-tool gmail draft --to "宛先" --subject "件名" --body "本文"
 animaworks-tool gmail draft --to "宛先" --subject "件名" --body "本文" --attachment /path/to/file.pdf
 animaworks-tool gmail send --to "宛先" --subject "件名" --body "本文"
+animaworks-tool gmail download <メッセージID> [--save-dir /path/to/dir]
 ```
-⚠️ **send はメールを即時送信します。取り消しできません。**"""
+⚠️ **send はメールを即時送信します。取り消しできません。**
+💾 **download** は添付ファイルを指定ディレクトリに保存します（デフォルト: /tmp/gmail_attachments/）"""
 
 
 def _print_emails(emails: list[Email], label: str) -> None:
@@ -711,6 +743,15 @@ def cli_main(argv: list[str] | None = None) -> None:
     p_draft.add_argument("--in-reply-to", default=None, help="Original message ID")
     p_draft.add_argument("--attachment", action="append", default=[], help="File path to attach (repeatable)")
 
+    # download
+    p_download = sub.add_parser("download", help="Download attachments from an email")
+    p_download.add_argument("message_id", help="Gmail message ID")
+    p_download.add_argument(
+        "--save-dir",
+        default="/tmp/gmail_attachments",
+        help="Directory to save attachments (default: /tmp/gmail_attachments)",
+    )
+
     # send
     p_send = sub.add_parser("send", help="Send email immediately (cannot be undone)")
     p_send.add_argument("--to", required=True, help="Recipient address")
@@ -749,6 +790,16 @@ def cli_main(argv: list[str] | None = None) -> None:
             print(body)
         else:
             print("(empty or could not retrieve body)", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.command == "download":
+        results = client.get_attachments(args.message_id, Path(args.save_dir))
+        if results:
+            print(f"Downloaded {len(results)} attachment(s):")
+            for filename, save_path in results:
+                print(f"  {filename} -> {save_path}")
+        else:
+            print("No attachments found in this message.", file=sys.stderr)
             sys.exit(1)
 
     elif args.command == "draft":
@@ -808,6 +859,16 @@ def dispatch(name: str, args: dict[str, Any]) -> Any:
         return [e.to_dict() for e in emails]
     if name == "gmail_read_body":
         return client.get_email_body(args["message_id"])
+    if name == "gmail_download":
+        save_dir = Path(args.get("save_dir", "/tmp/gmail_attachments"))
+        results = client.get_attachments(args["message_id"], save_dir)
+        return {
+            "count": len(results),
+            "attachments": [
+                {"filename": filename, "path": str(save_path)}
+                for filename, save_path in results
+            ],
+        }
     if name == "gmail_draft":
         raw_attachments = args.get("attachments")
         if isinstance(raw_attachments, str):
