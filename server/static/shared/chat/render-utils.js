@@ -549,12 +549,14 @@ export function updateStreamingZone(bubble, msg, opts, zone = "all") {
   if (!bubble) return;
   if (zone === "all") {
     bubble.innerHTML = renderStreamingBubbleInner(msg, opts);
+    _autoScrollThinking(bubble);
     return;
   }
   const sel = `.streaming-zone-${zone}`;
   const el = bubble.querySelector(sel);
   if (!el) {
     bubble.innerHTML = renderStreamingBubbleInner(msg, opts);
+    _autoScrollThinking(bubble);
     return;
   }
   if (zone === "subordinate") {
@@ -586,11 +588,15 @@ export function updateStreamingZone(bubble, msg, opts, zone = "all") {
   const fn = renderers[zone];
   if (fn) {
     el.innerHTML = fn(msg, opts);
-    if (zone === "thinking") {
-      const preview = el.querySelector(".thinking-inline-preview");
-      if (preview) preview.scrollTop = preview.scrollHeight;
-    }
+    if (zone === "thinking") _autoScrollThinking(el);
   }
+}
+
+function _autoScrollThinking(container) {
+  requestAnimationFrame(() => {
+    const el = container.querySelector(".thinking-inline-preview");
+    if (el) el.scrollTop = el.scrollHeight;
+  });
 }
 
 function _renderTextZoneContent(msg, opts) {

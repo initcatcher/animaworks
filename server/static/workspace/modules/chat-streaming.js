@@ -133,7 +133,9 @@ export function updateStreamingBubble(msg, zone = "all") {
   const bubble = bubbles[bubbles.length - 1];
   if (!bubble) return;
   updateStreamingZone(bubble, msg, renderOpts(), zone);
-  requestAnimationFrame(() => { dom.convMessages.scrollTop = dom.convMessages.scrollHeight; });
+  if (zone !== "thinking") {
+    requestAnimationFrame(() => { dom.convMessages.scrollTop = dom.convMessages.scrollHeight; });
+  }
 }
 
 export function submitConversation() {

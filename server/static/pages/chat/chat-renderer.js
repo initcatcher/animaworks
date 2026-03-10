@@ -334,7 +334,7 @@ export function createChatRenderer(ctx) {
     if (!bubble) return;
 
     updateStreamingZone(bubble, msg, _renderOpts(), zone);
-    if (!_userDetached) {
+    if (!_userDetached && zone !== "thinking") {
       requestAnimationFrame(() => { messagesEl.scrollTop = messagesEl.scrollHeight; });
     }
   }
