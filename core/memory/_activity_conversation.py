@@ -101,6 +101,16 @@ class ConversationMixin:
         )
         messages = self._entries_to_messages(entries)
 
+        if len(messages) <= limit and entries:
+            entries = self._load_conversation_entries(
+                before=before,
+                limit=limit,
+                thread_id=thread_id,
+                strict_thread=strict_thread,
+                _target_multiplier=15,
+            )
+            messages = self._entries_to_messages(entries)
+
         has_more = len(messages) > limit
         if has_more:
             messages = messages[-limit:]
@@ -124,18 +134,19 @@ class ConversationMixin:
         limit: int = 50,
         thread_id: str | None = None,
         strict_thread: bool = False,
+        _target_multiplier: int = 3,
     ) -> list[ActivityEntry]:
         """Load conversation-relevant entries, scanning backwards.
 
         Returns entries in chronological order.  Scans enough days to
-        collect at least ``limit * 3`` raw entries (to account for
-        tool_use/tool_result pairs being folded into messages).
+        collect at least ``limit * _target_multiplier`` raw entries (to
+        account for tool_use/tool_result pairs being folded into messages).
 
         When *thread_id* is given, only entries whose ``meta.thread_id``
         matches are returned.  Entries without the field are treated as
         belonging to ``"default"`` unless *strict_thread* is True.
         """
-        target_raw = limit * 3 + 50
+        target_raw = limit * _target_multiplier + 50
         entries: list[ActivityEntry] = []
         today = now_local().date()
         max_scan_days = 365
