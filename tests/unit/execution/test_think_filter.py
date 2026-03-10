@@ -38,7 +38,7 @@ class TestStripThinkingTags:
     def test_multiline_thinking(self):
         text = "<think>line1\nline2\nline3</think>response"
         thinking, response = strip_thinking_tags(text)
-        assert "line1\nline2\nline3" == thinking
+        assert thinking == "line1\nline2\nline3"
         assert response == "response"
 
     def test_no_closing_tag(self):
