@@ -278,7 +278,7 @@ class StreamingMixin:
                                 _text_tc = _try_parse_text_tool_call(response_text, iter_tools)
                             if _text_tc:
                                 _tc_name, _tc_args_json = _text_tc
-                                _tc_id = "text_call_0"
+                                _tc_id = f"text_call_{iteration}_{id(_tc_name) % 0xFFFF:04x}"
                                 tool_calls_acc[0] = {
                                     "id": _tc_id,
                                     "name": _tc_name,
