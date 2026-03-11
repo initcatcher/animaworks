@@ -1169,6 +1169,7 @@ def resolve_penalties(model_name: str) -> dict[str, float]:
 
     Returns a dict with only the keys that have non-None values.
     An empty dict means no penalties configured (backward-compatible).
+    Values are clamped to [-2.0, 2.0] per the OpenAI API specification.
     """
     entry = _match_models_json(model_name)
     result: dict[str, float] = {}
@@ -1177,7 +1178,7 @@ def resolve_penalties(model_name: str) -> dict[str, float]:
             val = entry.get(key)
             if val is not None:
                 try:
-                    result[key] = float(val)
+                    result[key] = max(-2.0, min(2.0, float(val)))
                 except (ValueError, TypeError):
                     pass
     return result

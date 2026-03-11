@@ -3,7 +3,6 @@
 Verifies that penalty parameters flow from models.json through ModelConfig
 to _build_llm_kwargs() for LLM degenerate repetition defense.
 """
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -119,6 +118,15 @@ class TestResolvePenalties:
             result = resolve_penalties("claude-sonnet-4-6")
         assert result == {"presence_penalty": 0.2}
 
+    def test_resolve_penalties_clamped_to_range(self):
+        """Values outside [-2.0, 2.0] are clamped."""
+        from core.config.models import resolve_penalties
+
+        entry = {"frequency_penalty": 5.0, "presence_penalty": -3.0}
+        with patch("core.config.models._match_models_json", return_value=entry):
+            result = resolve_penalties("openai/gpt-4o")
+        assert result == {"frequency_penalty": 2.0, "presence_penalty": -2.0}
+
 
 # ── _build_llm_kwargs penalty injection tests ──────────────────
 
@@ -126,7 +134,9 @@ class TestResolvePenalties:
 class TestBuildLlmKwargsPenalties:
     """Verify _build_llm_kwargs() includes penalty params when configured."""
 
-    def test_build_llm_kwargs_includes_penalties(self, anima_dir, tool_handler, memory):
+    def test_build_llm_kwargs_includes_penalties(
+        self, anima_dir, tool_handler, memory
+    ):
         """When resolve_penalties returns values, kwargs include them."""
         cfg = ModelConfig(model="claude-sonnet-4-6", api_key="k")
         ex = _make_litellm_executor(cfg, anima_dir, tool_handler, memory)
@@ -138,7 +148,9 @@ class TestBuildLlmKwargsPenalties:
         assert kwargs["frequency_penalty"] == 0.4
         assert kwargs["presence_penalty"] == 0.2
 
-    def test_build_llm_kwargs_model_config_overrides_models_json(self, anima_dir, tool_handler, memory):
+    def test_build_llm_kwargs_model_config_overrides_models_json(
+        self, anima_dir, tool_handler, memory
+    ):
         """ModelConfig.frequency_penalty overrides models.json value."""
         cfg = ModelConfig(
             model="claude-sonnet-4-6",
@@ -155,7 +167,9 @@ class TestBuildLlmKwargsPenalties:
         assert kwargs["frequency_penalty"] == 0.8
         assert kwargs["presence_penalty"] == 0.5
 
-    def test_build_llm_kwargs_no_penalties_when_unconfigured(self, anima_dir, tool_handler, memory):
+    def test_build_llm_kwargs_no_penalties_when_unconfigured(
+        self, anima_dir, tool_handler, memory
+    ):
         """When no penalties configured, kwargs omit them (backward-compatible)."""
         cfg = ModelConfig(model="claude-sonnet-4-6", api_key="k")
         ex = _make_litellm_executor(cfg, anima_dir, tool_handler, memory)

@@ -5,8 +5,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from core.execution.base import RepetitionDetector
 
 
@@ -62,3 +60,23 @@ class TestRepetitionDetector:
         pad = ["x", "y", "z", "w", "p", "q", "r", "s"]
         text = " ".join(pad + repeated)
         assert detector.check_full_text(text) is True
+
+    def test_feed_small_chunks_one_word_at_a_time(self) -> None:
+        """Feeding one word at a time still detects repetition correctly."""
+        detector = RepetitionDetector(n=4, threshold=5, min_tokens=20)
+        pad = [f"w{i}" for i in range(20)]
+        repeated = ["a", "b", "c", "d"] * 6
+        words = pad + repeated
+        detected = False
+        for w in words:
+            if detector.feed(w):
+                detected = True
+                break
+        assert detected is True
+
+    def test_feed_empty_text_ignored(self) -> None:
+        """Empty text chunks are silently ignored."""
+        detector = RepetitionDetector()
+        assert detector.feed("") is False
+        assert detector.feed("   ") is False
+        assert len(detector._tokens) == 0

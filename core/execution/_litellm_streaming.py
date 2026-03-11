@@ -81,6 +81,7 @@ class StreamingMixin:
         max_iterations = max_turns_override or self._model_config.max_turns
         _usage_acc = TokenUsage()
         _repetition_detector = RepetitionDetector()
+        _repetition_detected = False
 
         # Inject synthetic thinking_blocks into prior assistant messages
         # that have tool_calls but no thinking_blocks.  Without this,
@@ -223,6 +224,7 @@ class StreamingMixin:
                                 _truncation_msg = "\n\n[Response truncated: repetition detected]"
                                 iter_text_parts.append(_truncation_msg)
                                 yield {"type": "text_delta", "text": _truncation_msg}
+                                _repetition_detected = True
                                 break
 
                     # Reasoning content → thinking_delta events
@@ -355,8 +357,8 @@ class StreamingMixin:
                 if iter_text:
                     all_response_text.append(iter_text)
 
-                # ── No tool calls: final response ──
-                if not tool_calls_acc:
+                # ── No tool calls (or repetition detected): final response ──
+                if not tool_calls_acc or _repetition_detected:
                     full_text = "\n".join(all_response_text)
                     logger.debug(
                         "A stream final response at iteration=%d",
