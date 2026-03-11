@@ -64,7 +64,8 @@ def _setup_lifecycle(messages: list[Message]) -> LifecycleManager:
     run_heartbeat is an AsyncMock.  'alice' is pre-added to
     _pending_triggers to mimic the real trigger path.
     """
-    lm = LifecycleManager()
+    with patch("core.lifecycle.load_config", return_value=_default_config()):
+        lm = LifecycleManager()
     dp = MagicMock()
     dp.name = "alice"
     dp.run_heartbeat = AsyncMock(return_value=MagicMock())

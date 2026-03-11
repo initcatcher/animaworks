@@ -205,7 +205,7 @@ class TestPendingExecutorCancelledCheck:
         executor._anima_dir = anima_dir
         executor._anima_name = "anima"
 
-        result = await executor._run_llm_task(task_desc, task_path)
+        result = await executor._run_llm_task(task_desc, None)
         assert result == "(cancelled)"
 
 
