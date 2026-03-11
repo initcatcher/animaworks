@@ -190,7 +190,19 @@ class LiteLLMExecutor(
                 "messages": messages,
                 **iter_kwargs,
             }
-            if not is_final_iteration:
+            # Bedrock requires toolConfig in every request that has toolUse/toolResult
+            # in the conversation history — omitting tools causes ValidationException.
+            _has_tool_history = any(
+                msg.get("role") == "tool"
+                or (msg.get("role") == "assistant" and msg.get("tool_calls"))
+                for msg in messages
+            )
+            _bedrock_needs_tools = (
+                is_final_iteration
+                and _has_tool_history
+                and self._model_config.model.startswith("bedrock/")
+            )
+            if not is_final_iteration or _bedrock_needs_tools:
                 call_kwargs["tools"] = tools
 
             try:
