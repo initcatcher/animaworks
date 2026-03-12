@@ -398,6 +398,15 @@ class PendingTaskExecutor:
             parallel_ready = [td for td in ready if td.get("parallel")]
             serial_ready = [td for td in ready if not td.get("parallel")]
 
+            # Skip parallel tasks whose dependencies have failed (mirror of serial check at 461)
+            for td in list(parallel_ready):
+                if any(dep in failed for dep in td.get("depends_on", [])):
+                    parallel_ready.remove(td)
+                    remaining.remove(td)
+                    failed.add(td["task_id"])
+                    self._write_failed_result(td["task_id"], "failed_dependency")
+                    self._sync_task_queue(td["task_id"], "failed", summary="FAILED: failed_dependency")
+
             # Execute parallel tasks concurrently under semaphore
             if parallel_ready:
                 coros = [self._execute_parallel_task(td, completed, batch_id) for td in parallel_ready]
