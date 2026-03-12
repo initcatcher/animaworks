@@ -825,8 +825,10 @@ async def _update_knowledge_frontmatter(path: Path) -> None:
 
         import yaml
 
+        from core.memory._io import atomic_write_text
+
         fm = yaml.dump(meta, default_flow_style=False, allow_unicode=True)
-        path.write_text(f"---\n{fm}---\n\n{body.lstrip()}", encoding="utf-8")
+        atomic_write_text(path, f"---\n{fm}---\n\n{body.lstrip()}")
         logger.debug("Updated knowledge frontmatter: %s (version=%d)", path.name, meta["version"])
     except Exception:
         logger.debug("Failed to update frontmatter for %s", path, exc_info=True)

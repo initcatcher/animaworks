@@ -82,7 +82,7 @@ class LifecycleManager:
             timer.cancel()
         # Remove all scheduler jobs belonging to this anima
         for job in self.scheduler.get_jobs():
-            if job.id.startswith(f"{name}_"):
+            if job.id.startswith(f"{name}_") or job.id == f"consolidation_retry_{name}":
                 job.remove()
         logger.info("Unregistered '%s' from lifecycle manager", name)
 
@@ -673,6 +673,13 @@ class LifecycleManager:
                 anima_name,
                 result.duration_ms,
             )
+            try:
+                from core.memory.forgetting import ForgettingEngine
+
+                forgetter = ForgettingEngine(anima.memory.anima_dir, anima_name)
+                forgetter.synaptic_downscaling()
+            except Exception:
+                logger.exception("Synaptic downscaling failed after retry for anima=%s", anima_name)
             try:
                 from core.memory.consolidation import ConsolidationEngine
 
