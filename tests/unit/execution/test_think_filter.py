@@ -131,6 +131,28 @@ class TestStreamingThinkFilter:
         t, r = f.feed("second")
         assert t == "" and r == "second"
 
+    def test_after_done_strips_orphan_close_tags(self):
+        """After initial think block, subsequent </think> tags are stripped."""
+        f = StreamingThinkFilter()
+        f.feed("<think>thought</think>first")
+        t, r = f.feed("more thinking</think>second response")
+        assert t == ""
+        assert "</think>" not in r
+        assert "more thinking" in r
+        assert "second response" in r
+
+    def test_multiple_close_tags_in_passthrough(self):
+        """Qwen3.5 emits multiple <think> blocks; all </think> stripped."""
+        f = StreamingThinkFilter()
+        # First chunk triggers early-exit (no <think> prefix)
+        t1, r1 = f.feed("step 1 done")
+        assert r1 == "step 1 done"
+        # Subsequent chunks with </think> get stripped
+        t2, r2 = f.feed("</think>\nresult 1\nthinking again</think>\nresult 2")
+        assert "</think>" not in r2
+        assert "result 1" in r2
+        assert "result 2" in r2
+
     def test_response_newline_stripped(self):
         f = StreamingThinkFilter()
         t, r = f.feed("<think>thought</think>\n\nresponse")
@@ -162,11 +184,12 @@ class TestStreamingThinkFilter:
         assert "reasoning content here" in t
         assert r == "actual response"
 
-    def test_missing_open_tag_across_chunks_falls_through(self):
-        """Across-chunk missing-<think> is NOT caught by the streaming filter.
+    def test_missing_open_tag_across_chunks_strips_close_tag(self):
+        """Across-chunk missing-<think>: </think> is stripped in passthrough.
 
         The first chunk triggers early-exit (no <think> prefix).
-        The post-stream strip_thinking_tags safety net handles this.
+        Subsequent chunks with orphan </think> get the tag stripped so it
+        never leaks into user-visible text_delta events.
         """
         f = StreamingThinkFilter()
         t1, r1 = f.feed("I need to ")
@@ -176,4 +199,6 @@ class TestStreamingThinkFilter:
         assert t2 == "" and r2 == "analyze this carefully"
 
         t3, r3 = f.feed("</think>\n\nHere is my response")
-        assert t3 == "" and r3 == "</think>\n\nHere is my response"
+        assert t3 == ""
+        assert "</think>" not in r3
+        assert "Here is my response" in r3

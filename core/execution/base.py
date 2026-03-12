@@ -174,9 +174,15 @@ class StreamingThinkFilter:
         self._buffer = ""
         self._done = False
 
+    _THINK_CLOSE_RE = re.compile(r"</think>\s*")
+
     def feed(self, delta: str) -> tuple[str, str]:
         """Process *delta* and return ``(thinking_text, response_text)``."""
         if self._done:
+            # Strip orphan </think> tags that leak through in passthrough mode
+            # (e.g. Qwen3.5 emitting multiple <think> blocks throughout its response).
+            if "</think>" in delta:
+                delta = self._THINK_CLOSE_RE.sub("", delta)
             return ("", delta)
         self._buffer += delta
 

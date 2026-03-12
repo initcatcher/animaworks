@@ -582,6 +582,14 @@ class StreamingMixin:
 
         # If we exit the loop without returning, max iterations reached
         full_text = "\n".join(all_response_text) or "(max iterations reached)"
+        # Safety net: strip any residual <think> tags (same as final-response path)
+        _leaked, _clean = strip_thinking_tags(full_text)
+        if _leaked:
+            logger.info(
+                "A stream max-iter: post-stream strip_thinking_tags caught leaked thinking (%d chars)",
+                len(_leaked),
+            )
+            full_text = _clean
         logger.warning("A stream max iterations (%d) reached", max_iterations)
         yield {
             "type": "done",
@@ -813,6 +821,14 @@ class StreamingMixin:
 
         # Max iterations reached
         full_text = "\n".join(all_response_text) or "(max iterations reached)"
+        # Safety net: strip any residual <think> tags
+        _leaked_ol, _clean_ol = strip_thinking_tags(full_text)
+        if _leaked_ol:
+            logger.info(
+                "A ollama max-iter: strip_thinking_tags caught leaked thinking (%d chars)",
+                len(_leaked_ol),
+            )
+            full_text = _clean_ol
         logger.warning(
             "A ollama stream max iterations (%d) reached",
             max_iterations,
