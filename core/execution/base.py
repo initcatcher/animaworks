@@ -140,7 +140,9 @@ def strip_thinking_tags(text: str) -> tuple[str, str]:
         stripped = raw.lstrip()
         if stripped.startswith("<think>"):
             raw = stripped[len("<think>") :]
-        return raw, text[m.end() :]
+        # Strip remaining orphan </think> tags (e.g. Qwen emitting multiple think blocks)
+        response = re.sub(r"</think>\s*", "", text[m.end() :])
+        return raw, response
     return "", text
 
 

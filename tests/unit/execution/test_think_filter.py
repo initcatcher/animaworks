@@ -58,6 +58,15 @@ class TestStripThinkingTags:
         assert thinking == "reasoning here"
         assert response == "actual response"
 
+    def test_multiple_think_blocks_no_leak(self):
+        """Qwen models may emit multiple </think> tags; none should leak."""
+        text = "<think>thinking1</think>response1\nmore thinking\n</think>response2"
+        thinking, response = strip_thinking_tags(text)
+        assert thinking == "thinking1"
+        assert "</think>" not in response
+        assert "response1" in response
+        assert "response2" in response
+
 
 # ── StreamingThinkFilter ─────────────────────────────────────
 
