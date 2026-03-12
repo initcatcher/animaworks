@@ -478,6 +478,105 @@ class TestAuditSubordinateParams:
         assert "12h" in result
 
 
+class TestAuditSubordinateSince:
+    """Tests for since parameter (HH:MM time filter)."""
+
+    def test_since_filters_entries(self, tmp_path):
+        """Events before 'since' time are excluded."""
+        from core.time_utils import now_jst
+
+        handler = _make_handler(tmp_path, "sakura")
+        sub_dir = _setup_subordinate(tmp_path, "hinata", supervisor="sakura")
+
+        base = now_jst()
+        ts_early = base.replace(hour=8, minute=0, second=0, microsecond=0).isoformat()
+        ts_late = base.replace(hour=14, minute=0, second=0, microsecond=0).isoformat()
+
+        _write_activity(sub_dir, [
+            {"type": "heartbeat_end", "summary": "Early HB", "ts": ts_early},
+            {"type": "heartbeat_end", "summary": "Late HB", "ts": ts_late},
+        ])
+
+        p1, p2, p3 = _patches(tmp_path, {
+            "sakura": {},
+            "hinata": {"supervisor": "sakura"},
+        })
+        with p1, p2, p3:
+            result = handler.handle("audit_subordinate", {
+                "name": "hinata", "mode": "report", "since": "13:00",
+            })
+
+        assert "Late HB" in result
+        assert "Early HB" not in result
+
+    def test_since_title_format(self, tmp_path):
+        """Title should show 'since HH:MM' instead of 'last Xh'."""
+        handler = _make_handler(tmp_path, "sakura")
+        _setup_subordinate(tmp_path, "hinata", supervisor="sakura")
+
+        p1, p2, p3 = _patches(tmp_path, {
+            "sakura": {},
+            "hinata": {"supervisor": "sakura"},
+        })
+        with p1, p2, p3:
+            result = handler.handle("audit_subordinate", {
+                "name": "hinata", "mode": "report", "since": "09:00",
+            })
+
+        assert "09:00" in result
+        assert "24h" not in result
+
+    def test_since_summary_mode(self, tmp_path):
+        """since works with summary mode too."""
+        handler = _make_handler(tmp_path, "sakura")
+        _setup_subordinate(tmp_path, "hinata", supervisor="sakura")
+
+        p1, p2, p3 = _patches(tmp_path, {
+            "sakura": {},
+            "hinata": {"supervisor": "sakura"},
+        })
+        with p1, p2, p3:
+            result = handler.handle("audit_subordinate", {
+                "name": "hinata", "mode": "summary", "since": "10:30",
+            })
+
+        assert "10:30" in result
+
+    def test_since_batch_merged_timeline(self, tmp_path):
+        """since works with merged timeline (batch mode)."""
+        handler = _make_handler(tmp_path, "sakura")
+        _setup_subordinate(tmp_path, "hinata", supervisor="sakura")
+        _setup_subordinate(tmp_path, "rin", supervisor="sakura")
+
+        p1, p2, p3 = _patches(tmp_path, {
+            "sakura": {},
+            "hinata": {"supervisor": "sakura"},
+            "rin": {"supervisor": "sakura"},
+        })
+        with p1, p2, p3:
+            result = handler.handle("audit_subordinate", {"since": "09:00"})
+
+        assert "09:00" in result
+        assert "組織タイムライン" in result or "Org Timeline" in result
+
+    def test_since_invalid_format_ignored(self, tmp_path):
+        """Invalid since format is silently ignored (falls back to hours)."""
+        handler = _make_handler(tmp_path, "sakura")
+        _setup_subordinate(tmp_path, "hinata", supervisor="sakura")
+
+        p1, p2, p3 = _patches(tmp_path, {
+            "sakura": {},
+            "hinata": {"supervisor": "sakura"},
+        })
+        with p1, p2, p3:
+            result = handler.handle("audit_subordinate", {
+                "name": "hinata", "since": "invalid",
+            })
+
+        assert "24h" in result
+        assert "PermissionDenied" not in result
+
+
 class TestMergedTimeline:
     """Tests for generate_merged_timeline (cross-anima unified view)."""
 
