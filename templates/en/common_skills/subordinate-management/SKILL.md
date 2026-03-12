@@ -89,6 +89,8 @@ ping_subordinate(name="aoi")            # Liveness check for single subordinate
 read_subordinate_state(name="aoi")      # Current task and pending task content
 audit_subordinate(name="aoi")           # Comprehensive audit of last 1 day
 audit_subordinate(name="aoi", days=7)   # Audit last 7 days (days: 1–30)
+audit_subordinate(since="09:00")        # All subordinates since 9:00 today
+audit_subordinate(name="aoi", since="13:00")  # aoi since 13:00 today
 ```
 
 Also available via CLI (useful for S-mode via Bash):
@@ -96,6 +98,7 @@ Also available via CLI (useful for S-mode via Bash):
 ```bash
 animaworks anima audit aoi              # Audit last 1 day
 animaworks anima audit aoi --days 7     # Audit last 7 days
+animaworks anima audit --all --since 09:00  # All animas since 9:00 today
 ```
 
 ### Task Delegation

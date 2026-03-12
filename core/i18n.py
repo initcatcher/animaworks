@@ -295,9 +295,17 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ja": "═══ {name} — 監査サマリー (直近{hours}h) ═══",
         "en": "═══ {name} — Audit Summary (last {hours}h) ═══",
     },
+    "handler.audit_summary_title_since": {
+        "ja": "═══ {name} — 監査サマリー ({since}〜) ═══",
+        "en": "═══ {name} — Audit Summary (since {since}) ═══",
+    },
     "handler.audit_report_title": {
         "ja": "═══ {name} — 行動レポート (直近{hours}h) ═══",
         "en": "═══ {name} — Activity Report (last {hours}h) ═══",
+    },
+    "handler.audit_report_title_since": {
+        "ja": "═══ {name} — 行動レポート ({since}〜) ═══",
+        "en": "═══ {name} — Activity Report (since {since}) ═══",
     },
     "handler.audit_status_line": {
         "ja": "状態: {status} | モデル: {model}",
@@ -327,6 +335,10 @@ _STRINGS: dict[str, dict[str, str]] = {
     "handler.audit_merged_title": {
         "ja": "═══ 組織タイムライン (直近{hours}h) — {count}名 ═══",
         "en": "═══ Org Timeline (last {hours}h) — {count} animas ═══",
+    },
+    "handler.audit_merged_title_since": {
+        "ja": "═══ 組織タイムライン ({since}〜) — {count}名 ═══",
+        "en": "═══ Org Timeline (since {since}) — {count} animas ═══",
     },
     "handler.audit_merged_footer": {
         "ja": "─── 統計: 全{count}名 | 活動{total}件 | ツール{tools} | HB{hb} | 応答{resp_sent} | DM{dm_sent} | エラー{errors} ───",
@@ -1506,6 +1518,10 @@ _STRINGS: dict[str, dict[str, str]] = {
     "schema.audit_subordinate.direct_only": {
         "ja": "trueの場合、直属部下のみ対象（孫以下を除外）。デフォルト: false",
         "en": "If true, only audit direct subordinates (exclude grandchildren). Default: false",
+    },
+    "schema.audit_subordinate.since": {
+        "ja": "開始時刻（HH:MM形式、当日のJST）。指定時はhoursより優先される",
+        "en": "Start time (HH:MM format, today in JST). Takes precedence over hours when specified",
     },
     "schema.call_human.body": {
         "ja": "通知の本文（詳細な報告内容）",

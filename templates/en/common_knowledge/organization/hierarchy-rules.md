@@ -68,7 +68,7 @@ Anima with subordinates have dedicated tools for organizational management autom
 | `read_subordinate_state` | All subordinates (recursive) | Read subordinate's `state/current_task.md` and `state/pending.md` | `name` (required) |
 | `delegate_task` | Direct subordinates only | Delegate task (add to subordinate queue + send DM + create tracking entry on your side) | `name`, `instruction`, `deadline` (required), `summary` (optional) |
 | `task_tracker` | Your delegated tasks | Track progress of tasks delegated via `delegate_task` from subordinate queue | `status` (optional: "all"/"active"/"completed", default "active") |
-| `audit_subordinate` | All subordinates (recursive) | Generate activity timeline or statistics summary. Omit `name` to audit all subordinates at once (merged timeline) | `name` (optional), `mode` (optional: `"report"`/`"summary"`, default `"report"`), `hours` (optional: 1–168, default 24), `direct_only` (optional: boolean) |
+| `audit_subordinate` | All subordinates (recursive) | Generate activity timeline or statistics summary. Omit `name` to audit all subordinates at once (merged timeline) | `name` (optional), `mode` (optional: `"report"`/`"summary"`, default `"report"`), `hours` (optional: 1–168, default 24), `direct_only` (optional: boolean), `since` (optional: `"HH:MM"` start time today, takes precedence over hours) |
 | `disable_subordinate` | Direct subordinates | Disable subordinate (status.json enabled=false, process stops in ~30 seconds) | `name` (required), `reason` (optional) |
 | `enable_subordinate` | Direct subordinates | Re-enable a disabled subordinate | `name` (required) |
 | `set_subordinate_model` | Direct subordinates | Change subordinate's model (updates status.json; `restart_subordinate` required to apply) | `name`, `model` (required), `reason` (optional) |
@@ -98,6 +98,8 @@ audit_subordinate(name="dave")         # dave's activity timeline (last 24 hours
 audit_subordinate(name="dave", mode="summary", hours=168)  # dave's statistics summary (last 7 days)
 audit_subordinate()                    # Merged timeline of all subordinates (last 24 hours)
 audit_subordinate(direct_only=true)    # Merged timeline of direct subordinates only
+audit_subordinate(since="09:00")       # All subordinates since 9:00 today
+audit_subordinate(name="dave", since="13:00")  # dave since 13:00 today
 ```
 
 #### audit_subordinate Modes

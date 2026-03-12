@@ -522,6 +522,12 @@ def cli_main() -> None:
         help="Number of days to audit (default: 1, max: 30)",
     )
     p_anima_audit.add_argument(
+        "--since",
+        type=str,
+        default=None,
+        help="Start time in HH:MM format (today, JST). Overrides --days when specified",
+    )
+    p_anima_audit.add_argument(
         "--mode",
         choices=["summary", "report"],
         default="report",

@@ -147,7 +147,7 @@ Organizational tools automatically enabled for Anima with subordinates. See `org
 | `task_tracker` | Track delegated task progress | ○ |
 | `audit_subordinate` | Generate activity timeline or statistics summary for subordinates. Omit `name` for batch audit | ○ |
 
-All supervisor tools are available via MCP in S-mode. Audit is also available via CLI: `animaworks anima audit {name} [--all] [--days N] [--mode report|summary]`.
+All supervisor tools are available via MCP in S-mode. Audit is also available via CLI: `animaworks anima audit {name} [--all] [--days N] [--since HH:MM] [--mode report|summary]`. `--since` specifies the start time today and takes precedence over `--days`.
 
 ### Admin Tools (Conditional)
 

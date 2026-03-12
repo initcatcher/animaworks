@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -48,6 +49,14 @@ _REPORT_ICONS: dict[str, str] = {
 }
 
 
+def _audit_title(key: str, *, since: datetime | None = None, **kwargs: Any) -> str:
+    """Return the appropriate title string, switching to ``_since`` variant when needed."""
+    if since is not None:
+        since_str = since.strftime("%H:%M")
+        return t(f"{key}_since", since=since_str, **kwargs)
+    return t(key, **kwargs)
+
+
 # ── AuditAggregator ──────────────────────────────────────────
 
 
@@ -58,11 +67,11 @@ class AuditAggregator:
         self._anima_dir = anima_dir
         self._name = anima_dir.name
 
-    def _load_entries(self, hours: int) -> list[Any]:
+    def _load_entries(self, hours: int, since: datetime | None = None) -> list[Any]:
         from core.memory.activity import ActivityLogger
 
         al = ActivityLogger(self._anima_dir)
-        return al._load_entries(hours=hours, types=AUDIT_EVENT_TYPES)
+        return al._load_entries(hours=hours, types=AUDIT_EVENT_TYPES, since=since)
 
     def _get_status_info(self) -> tuple[str, str]:
         """Return (process_status, model_name) from status.json."""
@@ -120,9 +129,11 @@ class AuditAggregator:
 
     # ── Summary mode ─────────────────────────────────────────
 
-    def generate_summary(self, hours: int = 24, *, compact: bool = False) -> str:
+    def generate_summary(
+        self, hours: int = 24, *, compact: bool = False, since: datetime | None = None,
+    ) -> str:
         """Generate a statistics summary for the audit period."""
-        entries = self._load_entries(hours)
+        entries = self._load_entries(hours, since=since)
         process_status, model_name = self._get_status_info()
 
         type_counts: Counter[str] = Counter()
@@ -154,10 +165,8 @@ class AuditAggregator:
                 detail += f" {summary}"
                 error_details.append(detail)
 
-        lines: list[str] = [
-            t("handler.audit_summary_title", name=self._name, hours=hours),
-            "",
-        ]
+        title = _audit_title("handler.audit_summary_title", name=self._name, hours=hours, since=since)
+        lines: list[str] = [title, ""]
 
         if not compact:
             lines.append(t("handler.audit_status_line", status=process_status, model=model_name))
@@ -219,17 +228,18 @@ class AuditAggregator:
 
     # ── Report mode ──────────────────────────────────────────
 
-    def generate_report(self, hours: int = 24) -> str:
+    def generate_report(self, hours: int = 24, since: datetime | None = None) -> str:
         """Generate a unified timeline report (日報形式).
 
         All non-tool_use events are displayed chronologically.
         tool_use events are aggregated into a summary at the bottom.
         """
-        entries = self._load_entries(hours)
+        entries = self._load_entries(hours, since=since)
         process_status, model_name = self._get_status_info()
 
+        title = _audit_title("handler.audit_report_title", name=self._name, hours=hours, since=since)
         lines: list[str] = [
-            t("handler.audit_report_title", name=self._name, hours=hours),
+            title,
             "",
             t("handler.audit_status_line", status=process_status, model=model_name),
             "",
@@ -291,7 +301,9 @@ class AuditAggregator:
     # ── Merged timeline ────────────────────────────────────────
 
     @classmethod
-    def generate_merged_timeline(cls, anima_dirs: list[Path], hours: int = 24) -> str:
+    def generate_merged_timeline(
+        cls, anima_dirs: list[Path], hours: int = 24, since: datetime | None = None,
+    ) -> str:
         """Generate a unified cross-anima timeline sorted chronologically.
 
         Merges events from multiple Animas into a single timeline.
@@ -307,7 +319,7 @@ class AuditAggregator:
         for anima_dir in anima_dirs:
             name = anima_dir.name
             al = ActivityLogger(anima_dir)
-            entries = al._load_entries(hours=hours, types=AUDIT_EVENT_TYPES)
+            entries = al._load_entries(hours=hours, types=AUDIT_EVENT_TYPES, since=since)
             per_anima_tool_counts[name] = Counter()
             for e in entries:
                 global_type_counts[e.type] += 1
@@ -320,10 +332,8 @@ class AuditAggregator:
 
         tagged.sort(key=lambda x: x[1].ts)
 
-        lines: list[str] = [
-            t("handler.audit_merged_title", hours=hours, count=len(anima_dirs)),
-            "",
-        ]
+        title = _audit_title("handler.audit_merged_title", hours=hours, count=len(anima_dirs), since=since)
+        lines: list[str] = [title, ""]
 
         if not tagged and not any(per_anima_total_tools.values()):
             lines.append(t("handler.audit_no_activity"))

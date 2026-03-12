@@ -759,6 +759,10 @@ def _supervisor_tools() -> list[dict[str, Any]]:
                         "type": "boolean",
                         "description": _t("schema.audit_subordinate.direct_only"),
                     },
+                    "since": {
+                        "type": "string",
+                        "description": _t("schema.audit_subordinate.since"),
+                    },
                 },
             },
         },
@@ -1058,6 +1062,15 @@ SUBMIT_TASKS_TOOLS: list[dict[str, Any]] = [
                                 "type": "array",
                                 "items": {"type": "string"},
                                 "default": [],
+                            },
+                            "context": {
+                                "type": "string",
+                                "description": "Background context for the task executor",
+                                "default": "",
+                            },
+                            "reply_to": {
+                                "type": "string",
+                                "description": "Name of the Anima to notify on completion (default: submitter)",
                             },
                         },
                         "required": ["task_id", "title", "description"],

@@ -224,6 +224,7 @@ class ActivityLogger(
         hours: int | None = None,
         types: list[str] | None = None,
         involving: str | None = None,
+        since: datetime | None = None,
     ) -> list[ActivityEntry]:
         """Load all matching entries (no limit/offset).
 
@@ -234,6 +235,8 @@ class ActivityLogger(
             types: If given, only include these event types.
             involving: If given, only entries where *from_person*,
                 *to_person*, or *channel* matches this value.
+            since: If given, only include entries at or after this
+                timestamp.  Takes precedence over *hours*.
 
         Returns:
             Chronologically sorted list of all matching entries.
@@ -245,7 +248,11 @@ class ActivityLogger(
 
         scan_days = days
         cutoff: datetime | None = None
-        if hours is not None:
+        if since is not None:
+            cutoff = since
+            delta_days = (today - since.date()).days if since.date() <= today else 0
+            scan_days = delta_days + 1
+        elif hours is not None:
             scan_days = math.ceil(hours / 24) + 1
             cutoff = now - timedelta(hours=hours)
 

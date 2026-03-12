@@ -88,6 +88,8 @@ ping_subordinate(name="aoi")            # 単一の生存確認
 read_subordinate_state(name="aoi")      # 現在タスク・保留タスクの内容
 audit_subordinate(name="aoi")           # 直近1日の包括監査レポート
 audit_subordinate(name="aoi", days=7)   # 直近7日間の監査（days は 1〜30）
+audit_subordinate(since="09:00")        # 全配下の今日9時以降の監査
+audit_subordinate(name="aoi", since="13:00")  # aoi の今日13時以降
 ```
 
 CLI からも実行可能（S-mode の Bash 経由で使う場合に便利）:
@@ -95,6 +97,7 @@ CLI からも実行可能（S-mode の Bash 経由で使う場合に便利）:
 ```bash
 animaworks anima audit aoi              # 直近1日の監査
 animaworks anima audit aoi --days 7     # 直近7日間の監査
+animaworks anima audit --all --since 09:00  # 全Anima、今日9時以降
 ```
 
 ### タスク委譲

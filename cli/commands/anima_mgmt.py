@@ -771,6 +771,25 @@ def cmd_anima_set_outbound_limit(args: argparse.Namespace) -> None:
     print(t("cli.set_outbound_limit_success", name=name, details=", ".join(details)))
 
 
+def _parse_since(raw: str | None) -> "datetime | None":
+    """Parse ``--since HH:MM`` into a timezone-aware datetime (today, JST)."""
+    if not raw:
+        return None
+    from datetime import datetime as _dt
+    from datetime import time as _time
+
+    from core.memory.activity import now_local
+
+    now = now_local()
+    try:
+        parts = raw.strip().split(":")
+        t_obj = _time(int(parts[0]), int(parts[1]))
+    except (ValueError, IndexError):
+        print(f"Error: invalid --since format '{raw}' (expected HH:MM)")
+        sys.exit(1)
+    return _dt.combine(now.date(), t_obj, tzinfo=now.tzinfo)
+
+
 def cmd_anima_audit(args: argparse.Namespace) -> None:
     """Audit a subordinate anima's recent activity."""
     from collections import Counter
@@ -782,6 +801,8 @@ def cmd_anima_audit(args: argparse.Namespace) -> None:
     audit_all: bool = getattr(args, "audit_all", False)
     days: int = max(1, min(getattr(args, "days", 1), 30))
     mode = getattr(args, "mode", "report")
+    since = _parse_since(getattr(args, "since", None))
+    hours = days * 24
 
     if not name and not audit_all:
         print("Error: specify an anima name or use --all")
@@ -797,14 +818,14 @@ def cmd_anima_audit(args: argparse.Namespace) -> None:
             if not dirs:
                 print("No animas found.")
                 sys.exit(1)
-            print(AuditAggregator.generate_merged_timeline(dirs, hours=days * 24))
+            print(AuditAggregator.generate_merged_timeline(dirs, hours=hours, since=since))
         elif name:
             anima_dir = animas_dir / name
             if not anima_dir.exists() or not (anima_dir / "identity.md").exists():
                 print(f"Error: Anima '{name}' not found")
                 sys.exit(1)
             agg = AuditAggregator(anima_dir)
-            print(agg.generate_report(hours=days * 24))
+            print(agg.generate_report(hours=hours, since=since))
         return
 
     if audit_all:
@@ -817,7 +838,7 @@ def cmd_anima_audit(args: argparse.Namespace) -> None:
         parts: list[str] = []
         for d in dirs:
             agg = AuditAggregator(d)
-            parts.append(agg.generate_summary(hours=days * 24, compact=True))
+            parts.append(agg.generate_summary(hours=hours, compact=True, since=since))
         print("\n\n".join(parts))
         return
 
@@ -842,7 +863,10 @@ def cmd_anima_audit(args: argparse.Namespace) -> None:
             pass
 
     print(f"=== Audit Report: {name} ===")
-    print(f"Period: last {days} day(s)")
+    if since:
+        print(f"Period: since {since.strftime('%H:%M')}")
+    else:
+        print(f"Period: last {days} day(s)")
     print(f"Status: {process_status}")
     print(f"Model: {model_name}")
     print(f"Role: {role}")
@@ -851,7 +875,7 @@ def cmd_anima_audit(args: argparse.Namespace) -> None:
     # ── Activity summary ──
     al = ActivityLogger(anima_dir)
     _ENTRY_LIMIT = 10_000
-    entries = al.recent(days=days, limit=_ENTRY_LIMIT)
+    entries = al._load_entries(days=days, since=since)
 
     print("--- Activity Summary ---")
     if entries:

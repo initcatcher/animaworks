@@ -195,6 +195,23 @@ class OrgToolsMixin:
             )
         return None
 
+    @staticmethod
+    def _parse_since(raw: str | None) -> datetime | None:
+        """Parse ``HH:MM`` string into a timezone-aware datetime (today, JST)."""
+        if not raw:
+            return None
+        from datetime import time as _time
+
+        from core.memory.activity import now_local
+
+        now = now_local()
+        try:
+            parts = raw.strip().split(":")
+            t_obj = _time(int(parts[0]), int(parts[1]))
+        except (ValueError, IndexError):
+            return None
+        return datetime.combine(now.date(), t_obj, tzinfo=now.tzinfo)
+
     # ── Supervisor tool handlers ──────────────────────────────
 
     def _handle_disable_subordinate(self, args: dict[str, Any]) -> str:
@@ -881,6 +898,8 @@ class OrgToolsMixin:
         hours = min(max(raw_hours, 1), 168)
         direct_only = args.get("direct_only", False)
 
+        since = self._parse_since(args.get("since"))
+
         if target_name:
             err = self._check_descendant(target_name)
             if err:
@@ -898,15 +917,17 @@ class OrgToolsMixin:
         is_batch = len(targets) > 1
 
         if mode == "report" and is_batch:
-            result = AuditAggregator.generate_merged_timeline([animas_dir / n for n in targets], hours=hours)
+            result = AuditAggregator.generate_merged_timeline(
+                [animas_dir / n for n in targets], hours=hours, since=since,
+            )
         else:
             results: list[str] = []
             for name in targets:
                 agg = AuditAggregator(animas_dir / name)
                 if mode == "report":
-                    results.append(agg.generate_report(hours=hours))
+                    results.append(agg.generate_report(hours=hours, since=since))
                 else:
-                    results.append(agg.generate_summary(hours=hours, compact=is_batch))
+                    results.append(agg.generate_summary(hours=hours, compact=is_batch, since=since))
             result = "\n\n".join(results)
 
         self._activity.log(
@@ -917,7 +938,7 @@ class OrgToolsMixin:
                 target_name=target_name or f"batch({len(targets)})",
                 hours=hours,
             ),
-            meta={"targets": targets, "mode": mode, "hours": hours},
+            meta={"targets": targets, "mode": mode, "hours": hours, "since": args.get("since")},
         )
 
         return result
