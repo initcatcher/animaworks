@@ -11,6 +11,7 @@ import json
 import logging
 import shutil
 import sys
+from datetime import datetime
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -771,11 +772,10 @@ def cmd_anima_set_outbound_limit(args: argparse.Namespace) -> None:
     print(t("cli.set_outbound_limit_success", name=name, details=", ".join(details)))
 
 
-def _parse_since(raw: str | None) -> "datetime | None":
+def _parse_since(raw: str | None) -> datetime | None:
     """Parse ``--since HH:MM`` into a timezone-aware datetime (today, JST)."""
     if not raw:
         return None
-    from datetime import datetime as _dt
     from datetime import time as _time
 
     from core.memory.activity import now_local
@@ -787,7 +787,7 @@ def _parse_since(raw: str | None) -> "datetime | None":
     except (ValueError, IndexError):
         print(f"Error: invalid --since format '{raw}' (expected HH:MM)")
         sys.exit(1)
-    return _dt.combine(now.date(), t_obj, tzinfo=now.tzinfo)
+    return datetime.combine(now.date(), t_obj, tzinfo=now.tzinfo)
 
 
 def cmd_anima_audit(args: argparse.Namespace) -> None:
