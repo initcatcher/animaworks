@@ -10,16 +10,18 @@ tags: [search, x, twitter, external]
 
 External tool for X (Twitter) search and tweet retrieval.
 
-## Invocation via use_tool
+## Invocation via Bash
+
+Use **Bash** with `animaworks-tool x_search <subcommand> [args]`:
 
 ### search — Keyword search
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "x_search", "action": "search", "args": {"query": "search query", "count": 10, "days": 7}}}
+```bash
+animaworks-tool x_search "search query" [-n 10] [--days 7]
 ```
 
 ### user_tweets — Get user tweets
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "x_search", "action": "user_tweets", "args": {"user": "@username", "count": 10}}}
+```bash
+animaworks-tool x_search --user @username [-n 10]
 ```
 
 ## Parameters

@@ -129,7 +129,7 @@ animaworks anima create --from-md /tmp/{english_name}.md --name {english_name} -
 ### 5. サーバーに反映
 
 ```
-execute_command(command="curl -s -X POST http://localhost:18500/api/system/reload")
+Bash: curl -s -X POST http://localhost:18500/api/system/reload
 ```
 
 ### 6. 依頼者に報告

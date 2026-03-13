@@ -49,21 +49,13 @@ animaworks-tool machine run --background "instruction" -d /path/to/workdir
 animaworks-tool machine run -t 300 "instruction" -d /path/to/workdir
 ```
 
-## use_tool Invocation (Mode A/B)
+## Bash Invocation (Mode A/B)
 
-```json
-{
-  "tool": "use_tool",
-  "arguments": {
-    "tool_name": "machine",
-    "action": "run",
-    "args": {
-      "engine": "engine_name",
-      "instruction": "detailed instruction",
-      "working_directory": "/path/to/workdir"
-    }
-  }
-}
+Use **Bash** with `animaworks-tool machine run [options] "instruction" -d /path/to/workdir`:
+
+```bash
+animaworks-tool machine run -e cursor-agent "instruction" -d /path/to/workdir
+animaworks-tool machine run --background "instruction" -d /path/to/workdir
 ```
 
 ## Parameters

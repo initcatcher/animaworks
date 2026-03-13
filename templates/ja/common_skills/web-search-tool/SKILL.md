@@ -10,11 +10,15 @@ tags: [search, web, external]
 
 Brave Search APIを使ったWeb検索外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "web_search", "action": "search", "args": {"query": "検索クエリ", "count": 10}}}
+**S-mode（推奨）**: Bash で `animaworks-tool web_search` を実行
+
+```bash
+animaworks-tool web_search "検索クエリ" [-n 10] [-l ja] [-f pd]
 ```
+
+**A/B-mode**: `use_tool(tool_name="web_search", action="search", args={...})` で構造化呼び出し
 
 ## パラメータ
 

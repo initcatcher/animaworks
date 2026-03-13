@@ -11,11 +11,17 @@ tags: [image, 3d, generation, external]
 
 キャラクター画像・3Dモデルを生成する外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "image_gen", "action": "ACTION", "args": {...}}}
+**S-mode（推奨）**: Bash で `animaworks-tool image_gen` を実行
+
+```bash
+animaworks-tool image_gen pipeline "1girl, ..." --anima-dir $ANIMAWORKS_ANIMA_DIR
+animaworks-tool image_gen fullbody "1girl, standing, ..."
+# 長時間処理は animaworks-tool submit image_gen pipeline ... でバックグラウンド実行
 ```
+
+**A/B-mode**: `use_tool(tool_name="image_gen", action="ACTION", args={...})` で構造化呼び出し
 
 ## アクション一覧
 

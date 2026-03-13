@@ -47,19 +47,20 @@ animaworks-tool machine run --background "指示" -d /path/to/workdir
 animaworks-tool machine run -t 300 "指示" -d /path/to/workdir
 ```
 
-## use_tool での呼び出し（A/Bモード）
+## 呼び出し方法
+
+**S-mode（推奨）**: Bash で `animaworks-tool machine run` を実行（上記 CLI 使用法を参照）
+
+**A/B-mode**: `use_tool(tool_name="machine", action="run", args={...})` で構造化呼び出し
 
 ```json
 {
-  "tool": "use_tool",
-  "arguments": {
-    "tool_name": "machine",
-    "action": "run",
-    "args": {
-      "engine": "エンジン名",
-      "instruction": "詳細な作業指示",
-      "working_directory": "/path/to/workdir"
-    }
+  "tool_name": "machine",
+  "action": "run",
+  "args": {
+    "engine": "エンジン名",
+    "instruction": "詳細な作業指示",
+    "working_directory": "/path/to/workdir"
   }
 }
 ```

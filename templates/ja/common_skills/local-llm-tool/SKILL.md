@@ -10,11 +10,17 @@ tags: [llm, local, ollama, external]
 
 ローカルLLM（Ollama/vLLM）経由でテキスト生成・チャットを行う外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "local_llm", "action": "ACTION", "args": {...}}}
+**S-mode（推奨）**: Bash で `animaworks-tool local_llm` を実行
+
+```bash
+animaworks-tool local_llm generate "プロンプト" [-S "システムプロンプト"]
+animaworks-tool local_llm list
+animaworks-tool local_llm status
 ```
+
+**A/B-mode**: `use_tool(tool_name="local_llm", action="ACTION", args={...})` で構造化呼び出し
 
 ## アクション一覧
 

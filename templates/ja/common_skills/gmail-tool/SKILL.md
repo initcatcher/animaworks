@@ -10,11 +10,17 @@ tags: [communication, gmail, email, external]
 
 GmailのメールをOAuth2で直接操作する外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "gmail", "action": "ACTION", "args": {...}}}
+**S-mode（推奨）**: Bash で `animaworks-tool gmail` を実行
+
+```bash
+animaworks-tool gmail unread [-n 20]
+animaworks-tool gmail read MESSAGE_ID
+animaworks-tool gmail draft --to ADDR --subject SUBJ --body BODY [--thread-id TID]
 ```
+
+**A/B-mode**: `use_tool(tool_name="gmail", action="ACTION", args={...})` で構造化呼び出し
 
 ## アクション一覧
 

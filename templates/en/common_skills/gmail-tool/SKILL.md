@@ -10,10 +10,14 @@ tags: [communication, gmail, email, external]
 
 External tool for Gmail operations via OAuth2 API access.
 
-## Invocation via use_tool
+## Invocation via Bash
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "gmail", "action": "ACTION", "args": {...}}}
+Use **Bash** with `animaworks-tool gmail <subcommand> [args]`:
+
+```bash
+animaworks-tool gmail unread [-n 20]
+animaworks-tool gmail read MESSAGE_ID
+animaworks-tool gmail draft --to ADDR --subject SUBJ --body BODY [--thread-id TID]
 ```
 
 ## Actions

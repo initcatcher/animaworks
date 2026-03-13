@@ -4,7 +4,7 @@
 
 ### send_message
 
-**mcp__aw__send_message** ツール:
+**send_message** ツール:
 - `to`: 宛先名 / `content`: メッセージ本文
 - `intent`: `report`（報告）| `question`（質問）| 省略（雑談・FYI）
 - `reply_to` / `thread_id`: スレッド返信時に指定
@@ -21,9 +21,9 @@
 全社員が見える掲示板。チャネル: `general`（全社共通）、`ops`（運用系）
 
 ### 操作
-- **mcp__aw__read_channel**: `channel`, `limit`(default:20), `human_only`
-- **mcp__aw__post_channel**: `channel`, `text`（`@名前` メンション、`@all` 全員通知）
-- **mcp__aw__read_dm_history**: `peer`, `limit`(default:20)
+- **read_channel**: `channel`, `limit`(default:20), `human_only`
+- **post_channel**: `channel`, `text`（`@名前` メンション、`@all` 全員通知）
+- **read_dm_history**: `peer`, `limit`(default:20)
 
 ### DM vs Board
 - **DM**: 特定相手への指示・報告・質問

@@ -10,11 +10,19 @@ tags: [audio, transcription, whisper, external]
 
 Whisper (faster-whisper) を使った音声文字起こしツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
+
+**S-mode（推奨）**: Bash で `animaworks-tool transcribe transcribe` を実行
+
+```bash
+animaworks-tool transcribe transcribe audio_file.wav [-l ja] [-m large-v3-turbo]
+```
+
+**A/B-mode**: `use_tool(tool_name="transcribe", action="audio", args={...})` で構造化呼び出し
 
 ### audio — 音声文字起こし
 ```json
-{"tool": "use_tool", "arguments": {"tool_name": "transcribe", "action": "audio", "args": {"audio_path": "音声ファイルパス", "language": "ja"}}}
+{"tool_name": "transcribe", "action": "audio", "args": {"audio_path": "音声ファイルパス", "language": "ja"}}
 ```
 
 ## パラメータ

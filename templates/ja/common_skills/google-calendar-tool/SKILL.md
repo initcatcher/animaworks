@@ -10,11 +10,16 @@ tags: [calendar, google, schedule, external]
 
 GoogleカレンダーのイベントをOAuth2で直接操作する外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "google_calendar", "action": "ACTION", "args": {...}}}
+**S-mode（推奨）**: Bash で `animaworks-tool google_calendar` を実行
+
+```bash
+animaworks-tool google_calendar list [-n 20] [-d 7] [--calendar-id primary]
+animaworks-tool google_calendar add "会議" --start 2026-03-04T10:00:00+09:00 --end 2026-03-04T11:00:00+09:00
 ```
+
+**A/B-mode**: `use_tool(tool_name="google_calendar", action="ACTION", args={...})` で構造化呼び出し
 
 ## アクション一覧
 

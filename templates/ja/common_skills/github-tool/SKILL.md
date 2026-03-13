@@ -10,11 +10,18 @@ tags: [development, github, external]
 
 GitHubのIssue・PRをgh CLI経由で操作する外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "github", "action": "ACTION", "args": {...}}}
+**S-mode（推奨）**: Bash で `animaworks-tool github` を実行
+
+```bash
+animaworks-tool github issues [--repo OWNER/REPO] [--state open] [--limit 20]
+animaworks-tool github create-issue --title TITLE --body BODY [--labels LABELS]
+animaworks-tool github prs [--repo OWNER/REPO] [--state open] [--limit 20]
+animaworks-tool github create-pr --title TITLE --body BODY --head BRANCH [--base main]
 ```
+
+**A/B-mode**: `use_tool(tool_name="github", action="ACTION", args={...})` で構造化呼び出し
 
 ## アクション一覧
 

@@ -10,16 +10,25 @@ tags: [search, x, twitter, external]
 
 X (Twitter) の検索・ツイート取得を行う外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
+
+**S-mode（推奨）**: Bash で `animaworks-tool x_search` を実行
+
+```bash
+animaworks-tool x_search "検索クエリ" [-n 10] [--days 7]
+animaworks-tool x_search --user @username [-n 10]
+```
+
+**A/B-mode**: `use_tool(tool_name="x_search", action="search"|"user_tweets", args={...})` で構造化呼び出し
 
 ### search — キーワード検索
 ```json
-{"tool": "use_tool", "arguments": {"tool_name": "x_search", "action": "search", "args": {"query": "検索クエリ", "count": 10, "days": 7}}}
+{"tool_name": "x_search", "action": "search", "args": {"query": "検索クエリ", "count": 10, "days": 7}}
 ```
 
 ### user_tweets — ユーザーのツイート取得
 ```json
-{"tool": "use_tool", "arguments": {"tool_name": "x_search", "action": "user_tweets", "args": {"user": "@ユーザー名", "count": 10}}}
+{"tool_name": "x_search", "action": "user_tweets", "args": {"user": "@ユーザー名", "count": 10}}
 ```
 
 ## パラメータ

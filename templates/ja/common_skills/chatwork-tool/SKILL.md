@@ -10,11 +10,18 @@ tags: [communication, chatwork, external]
 
 Chatworkのメッセージ送受信・検索・管理を行う外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "chatwork", "action": "ACTION", "args": {...}}}
+**S-mode（推奨）**: Bash で `animaworks-tool chatwork` を実行
+
+```bash
+animaworks-tool chatwork send ROOM MESSAGE
+animaworks-tool chatwork messages ROOM [-n 20]
+animaworks-tool chatwork search KEYWORD [-r ROOM] [-n 50]
+# 他は下記アクション一覧を参照
 ```
+
+**A/B-mode**: `use_tool(tool_name="chatwork", action="ACTION", args={...})` で構造化呼び出し
 
 ## アクション一覧
 

@@ -10,11 +10,13 @@ tags: [audio, transcription, whisper, external]
 
 External tool for speech-to-text using Whisper (faster-whisper).
 
-## Invocation via use_tool
+## Invocation via Bash
+
+Use **Bash** with `animaworks-tool transcribe <subcommand> [args]`:
 
 ### audio — Transcribe audio file
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "transcribe", "action": "audio", "args": {"audio_path": "audio file path", "language": "ja"}}}
+```bash
+animaworks-tool transcribe transcribe audio_file.wav [-l ja] [-m large-v3-turbo]
 ```
 
 ## Parameters

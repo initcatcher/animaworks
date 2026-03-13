@@ -176,7 +176,7 @@ then read it with `read_memory_file(path="common_knowledge/...")`.
 | config, status.json, SSoT, reload, settings | `reference/operations/project-setup.md` |
 | Heartbeat, heartbeat, periodic check | `operations/heartbeat-cron-guide.md` |
 | cron, schedule, scheduled task | `operations/heartbeat-cron-guide.md` |
-| tool, animaworks-tool, MCP, mcp__aw__, skill | `operations/tool-usage-overview.md` |
+| tool, animaworks-tool, MCP, skill | `operations/tool-usage-overview.md` |
 | execution mode, S-mode, A-mode, B-mode, C-mode | `operations/tool-usage-overview.md` |
 | background, submit, long-running tool | `operations/background-tasks.md` |
 | model, models.json, credential, set-model, context window | `reference/operations/model-guide.md` |

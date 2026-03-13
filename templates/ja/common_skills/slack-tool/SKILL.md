@@ -10,11 +10,17 @@ tags: [communication, slack, external]
 
 Slackのメッセージ送受信・検索・リアクションを行う外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "slack", "action": "ACTION", "args": {...}}}
+**S-mode（推奨）**: Bash で `animaworks-tool slack <サブコマンド>` を実行
+
+```bash
+animaworks-tool slack send CHANNEL MESSAGE [--thread TS]
+animaworks-tool slack messages CHANNEL [-n 20]
+# 他は下記アクション一覧を参照
 ```
+
+**A/B-mode**: `use_tool(tool_name="slack", action="ACTION", args={...})` で構造化呼び出し
 
 ## アクション一覧
 
@@ -60,7 +66,7 @@ animaworks-tool slack unreplied [--json]
 animaworks-tool slack channels
 ```
 
-> `react` アクションは CLI 未対応。`use_tool` または MCP 経由で使用する。
+> `react` アクションは CLI 未対応。A/B-mode の `use_tool` または MCP 経由で使用する。
 
 ## 注意事項
 

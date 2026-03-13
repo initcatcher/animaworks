@@ -10,11 +10,17 @@ tags: [productivity, notion, external]
 
 Notion API 経由でページ・データベースの検索・取得・作成・更新を行う外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "notion", "action": "ACTION", "args": {...}}}
+**S-mode（推奨）**: Bash で `animaworks-tool notion` を実行
+
+```bash
+animaworks-tool notion search [検索ワード] -j
+animaworks-tool notion get-page PAGE_ID -j
+# 他は下記アクション一覧を参照
 ```
+
+**A/B-mode**: `use_tool(tool_name="notion", action="ACTION", args={...})` で構造化呼び出し
 
 ## アクション一覧
 

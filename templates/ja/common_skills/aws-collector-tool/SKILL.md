@@ -10,11 +10,17 @@ tags: [infrastructure, aws, monitoring, external]
 
 AWS ECSステータス・CloudWatchログ・メトリクスを収集する外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "aws_collector", "action": "ACTION", "args": {...}}}
+**S-mode（推奨）**: Bash で `animaworks-tool aws_collector` を実行
+
+```bash
+animaworks-tool aws_collector ecs-status [--cluster NAME] [--service NAME]
+animaworks-tool aws_collector error-logs --log-group NAME [--hours 1] [--patterns "ERROR"]
+animaworks-tool aws_collector metrics --cluster NAME --service NAME [--metric CPUUtilization]
 ```
+
+**A/B-mode**: `use_tool(tool_name="aws_collector", action="ACTION", args={...})` で構造化呼び出し
 
 ## アクション一覧
 
