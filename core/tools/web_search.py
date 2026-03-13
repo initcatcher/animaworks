@@ -157,6 +157,8 @@ def dispatch(name: str, args: dict[str, Any]) -> Any:
     """Dispatch a tool call by schema name."""
     if name == "web_search":
         args.pop("anima_dir", None)
+        if "limit" in args:
+            args["count"] = args.pop("limit")
         return search(**args)
     raise ValueError(f"Unknown tool: {name}")
 

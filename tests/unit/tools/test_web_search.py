@@ -16,6 +16,7 @@ from core.tools._base import ToolConfigError
 from core.tools.web_search import (
     BRAVE_SEARCH_URL,
     _strip_html,
+    dispatch,
     format_results,
     get_tool_schemas,
     search,
@@ -167,6 +168,35 @@ class TestFormatResults:
 
 
 # ── get_tool_schemas ──────────────────────────────────────────────
+
+
+class TestDispatch:
+    """Dispatch function parameter mapping tests."""
+
+    @patch("core.tools.web_search.search")
+    def test_limit_mapped_to_count(self, mock_search):
+        """'limit' in args should be mapped to 'count' for search()."""
+        mock_search.return_value = [{"title": "T", "url": "U", "description": "D"}]
+        dispatch("web_search", {"query": "test", "limit": 3})
+        mock_search.assert_called_once_with(query="test", count=3)
+
+    @patch("core.tools.web_search.search")
+    def test_count_passed_directly(self, mock_search):
+        """'count' in args should be passed through without mapping."""
+        mock_search.return_value = []
+        dispatch("web_search", {"query": "test", "count": 7})
+        mock_search.assert_called_once_with(query="test", count=7)
+
+    @patch("core.tools.web_search.search")
+    def test_anima_dir_stripped(self, mock_search):
+        """anima_dir should be stripped before calling search()."""
+        mock_search.return_value = []
+        dispatch("web_search", {"query": "test", "anima_dir": "/tmp/a"})
+        mock_search.assert_called_once_with(query="test")
+
+    def test_unknown_tool_raises(self):
+        with pytest.raises(ValueError, match="Unknown tool"):
+            dispatch("nonexistent", {})
 
 
 class TestGetToolSchemas:
