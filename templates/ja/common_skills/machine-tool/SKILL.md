@@ -27,7 +27,9 @@ animaworks-tool machine run --help
 工作機械は精密な加工ができるが、何を作るか決めない。記憶も通信もない。
 **正確な設計図（instruction）を渡すのがあなたの仕事。**
 
-## CLI使用法（Sモード）
+## 呼び出し方法
+
+**Bash**: `animaworks-tool machine run [オプション] "指示" -d /path/to/workdir` で実行
 
 ```bash
 # 基本形（デフォルトエンジンが自動選択される）
@@ -45,23 +47,6 @@ animaworks-tool machine run --background "指示" -d /path/to/workdir
 
 # タイムアウト指定（秒）
 animaworks-tool machine run -t 300 "指示" -d /path/to/workdir
-```
-
-## use_tool での呼び出し（A/Bモード）
-
-```json
-{
-  "tool": "use_tool",
-  "arguments": {
-    "tool_name": "machine",
-    "action": "run",
-    "args": {
-      "engine": "エンジン名",
-      "instruction": "詳細な作業指示",
-      "working_directory": "/path/to/workdir"
-    }
-  }
-}
 ```
 
 ## パラメータ

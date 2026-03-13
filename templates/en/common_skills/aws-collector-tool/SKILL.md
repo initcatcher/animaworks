@@ -10,11 +10,9 @@ tags: [infrastructure, aws, monitoring, external]
 
 External tool for collecting AWS ECS status, CloudWatch logs, and metrics.
 
-## Invocation via use_tool
+## Invocation via Bash
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "aws_collector", "action": "ACTION", "args": {...}}}
-```
+Use **Bash** with `animaworks-tool aws_collector <subcommand> [args]`. See Actions below for syntax.
 
 ## Actions
 

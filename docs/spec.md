@@ -859,10 +859,9 @@ Internal tools provided by the framework (MCP tools in Mode S, ToolHandler dispa
 |  | `read_channel` | Read shared channel history |
 |  | `read_channel_mentions` | Search for mentions in a channel |
 |  | `read_dm_history` | Read DM history |
-| **Task** | `backlog_task` | Add a task to the persistent queue |
+| **Task** | `submit_tasks` | Add tasks to the persistent queue / submit batch with dependency DAG for parallel execution |
 |  | `update_task` | Update task status |
-|  | `list_tasks` | List tasks by status |
-|  | `submit_tasks` | Submit a batch of tasks with dependency DAG for parallel execution |
+|  | Task list | Via CLI: `animaworks-tool task list` |
 | **Skill** | `skill` | Look up a skill (progressive disclosure: name only → full text on demand) |
 |  | `create_skill` | Create a new skill |
 | **Vault** | `vault_get` | Retrieve a secret from the Vault |

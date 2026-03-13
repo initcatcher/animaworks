@@ -53,7 +53,7 @@ This skill applies **only when the Bash tool is available**.
 - Small edit in a single file (do it yourself)
 - Memory read/write (use your tools)
 - External API calls (use dedicated tools)
-- Search or research only (web_search or read_file is enough)
+- Search or research only (web_search or Read is enough)
 
 ---
 

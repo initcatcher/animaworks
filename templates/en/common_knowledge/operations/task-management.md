@@ -32,29 +32,33 @@ In S-mode (Claude Agent SDK) Chat path, the **Task tool** (and Agent tool) provi
 - With subordinates → immediately delegated to the subordinate with minimum workload and best role match (same flow as delegate_task)
 - Without subordinates, or when delegation fails → written to `state/pending/`, and TaskExec path runs it
 
-### Task Queue (backlog_task / update_task / list_tasks)
+### Task Queue (submit_tasks / update_task / List via CLI)
 
 The persistent task queue is recorded in `state/task_queue.jsonl` in append-only JSONL format.
-Use `backlog_task` to register tasks, `update_task` to update status, and `list_tasks` to retrieve the list.
+Use `submit_tasks` to register tasks and `update_task` to update status. To retrieve the list, use the CLI: `animaworks-tool task list`.
 Tasks registered in the queue are displayed in summarized form in the system prompt Priming section.
 
-#### backlog_task
+#### submit_tasks (Task Registration)
+
+Use `submit_tasks` to create and register tasks. For a single task, specify one item in the tasks array.
 
 ```
-backlog_task(source="human", original_instruction="Create the monthly sales report and submit it to aoi", assignee="your own name", summary="Monthly report creation", deadline="1d")
+submit_tasks(batch_id="human-20260313", tasks=[
+  {"task_id": "t1", "title": "Monthly report creation", "description": "Create the monthly sales report and submit it to aoi", "parallel": true}
+])
 ```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `source` | MUST | `human` (request from human) / `anima` (delegation from Anima) |
-| `original_instruction` | MUST | Original instruction text (include quoted text when delegating. Max 10,000 characters) |
-| `assignee` | MUST | Assignee name (your own name or delegatee Anima name) |
-| `summary` | MUST | One-line task summary (defaults to first 100 chars of original_instruction if empty) |
-| `deadline` | MUST | Deadline. Relative format `30m` / `2h` / `1d` or ISO8601 |
-| `relay_chain` | MAY | Delegation chain (e.g. `["aoi", "taro"]`) |
+| `batch_id` | MUST | Unique batch identifier |
+| `tasks[].task_id` | MUST | Unique task ID within the batch |
+| `tasks[].title` | MUST | Task title (one-line summary) |
+| `tasks[].description` | MUST | Original instruction text (include quoted text when delegating) |
+| `tasks[].parallel` | MAY | `true` for parallel execution (recommended `true` for single tasks) |
+| `tasks[].depends_on` | MAY | Array of predecessor task IDs |
 
-- When receiving instructions from a human, always record with `backlog_task` and specify `source="human"` (MUST)
-- Tasks with `source: human` must be processed with highest priority (MUST)
+- When receiving instructions from a human, always register with `submit_tasks` (MUST)
+- Human-origin tasks must be processed with highest priority (MUST)
 - Queued tasks are reviewed by Heartbeat; when starting work, update to `in_progress` with `update_task`
 
 #### update_task
@@ -68,20 +72,20 @@ update_task(task_id="abc123def456", status="done", summary="Report creation comp
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `task_id` | MUST | Task ID (returned when backlog_task was called) |
+| `task_id` | MUST | Task ID (returned when submit_tasks was called) |
 | `status` | MUST | `pending` / `in_progress` / `done` / `cancelled` / `blocked` / `failed` |
 | `summary` | MAY | Updated summary |
 
-#### list_tasks
+#### Task List (CLI)
 
-Retrieves the task queue list. Can filter by status.
+Retrieve the task queue list with `animaworks-tool task list`. Can filter by status.
 
 ```
-list_tasks()                     # All tasks
-list_tasks(status="pending")     # Pending only
-list_tasks(status="in_progress") # In progress only
-list_tasks(status="done")        # Completed only
-list_tasks(status="failed")      # Failed only
+Bash: animaworks-tool task list                    # All tasks
+Bash: animaworks-tool task list --status pending   # Pending only
+Bash: animaworks-tool task list --status in_progress
+Bash: animaworks-tool task list --status done
+Bash: animaworks-tool task list --status failed
 ```
 
 #### Task Queue States and Markers

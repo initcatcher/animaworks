@@ -10,47 +10,43 @@ tags: [communication, slack, external]
 
 Slackのメッセージ送受信・検索・リアクションを行う外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "slack", "action": "ACTION", "args": {...}}}
-```
+**Bash**: `animaworks-tool slack <サブコマンド> [引数]` で実行
 
 ## アクション一覧
 
 ### send — メッセージ送信
-```json
-{"tool_name": "slack", "action": "send", "args": {"channel": "#チャンネル名", "message": "送信テキスト", "thread": "スレッドts(任意)"}}
+```bash
+animaworks-tool slack send CHANNEL MESSAGE [--thread TS]
 ```
 
 ### messages — メッセージ取得
-```json
-{"tool_name": "slack", "action": "messages", "args": {"channel": "#チャンネル名", "limit": 20}}
+```bash
+animaworks-tool slack messages CHANNEL [-n 20]
 ```
 
 ### search — メッセージ検索
-```json
-{"tool_name": "slack", "action": "search", "args": {"keyword": "検索ワード", "channel": "#チャンネル名(任意)", "limit": 50}}
+```bash
+animaworks-tool slack search KEYWORD [-c CHANNEL] [-n 50]
 ```
 
 ### unreplied — 未返信メッセージ確認
-```json
-{"tool_name": "slack", "action": "unreplied", "args": {}}
+```bash
+animaworks-tool slack unreplied [--json]
 ```
 
 ### channels — チャンネル一覧
-```json
-{"tool_name": "slack", "action": "channels", "args": {}}
+```bash
+animaworks-tool slack channels
 ```
 
 ### react — 絵文字リアクション
-```json
-{"tool_name": "slack", "action": "react", "args": {"channel": "#チャンネル名", "emoji": "thumbsup", "message_ts": "メッセージのタイムスタンプ"}}
-```
 - `emoji`: Slack の絵文字名（コロンなし。例: `thumbsup`, `eyes`, `white_check_mark`）
 - `message_ts`: リアクション対象メッセージのタイムスタンプ（`messages` アクションの結果から取得可能）
+- **注意**: `react` アクションは CLI 未対応。MCP 経由で使用する。
 
-## CLI使用法（Sモード）
+## CLI使用法
 
 ```bash
 animaworks-tool slack send CHANNEL MESSAGE [--thread TS]
@@ -59,8 +55,6 @@ animaworks-tool slack search KEYWORD [-c CHANNEL] [-n 50]
 animaworks-tool slack unreplied [--json]
 animaworks-tool slack channels
 ```
-
-> `react` アクションは CLI 未対応。`use_tool` または MCP 経由で使用する。
 
 ## 注意事項
 

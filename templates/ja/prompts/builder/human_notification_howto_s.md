@@ -1,4 +1,4 @@
-**mcp__aw__call_human** ツールで人間の管理者に連絡してください:
+**call_human** ツールで人間の管理者に連絡してください:
 - `subject`: 件名
 - `body`: 本文
 - `priority`: 優先度（`low` / `normal` / `high` / `urgent`、省略時: `normal`）

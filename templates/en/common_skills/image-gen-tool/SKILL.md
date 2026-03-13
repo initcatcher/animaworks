@@ -11,11 +11,9 @@ tags: [image, 3d, generation, external]
 
 External tool for character image and 3D model generation.
 
-## Invocation via use_tool
+## Invocation via Bash
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "image_gen", "action": "ACTION", "args": {...}}}
-```
+Use **Bash** with `animaworks-tool image_gen <subcommand> [args]`. For long-running pipelines, use `animaworks-tool submit image_gen pipeline ...`.
 
 ## Actions
 

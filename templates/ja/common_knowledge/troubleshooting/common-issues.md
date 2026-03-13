@@ -126,7 +126,7 @@ send_message(
    ```
 
 5. **ブロック中でも進められる作業がないか確認する**
-   - 永続タスクキュー（`list_tasks`）および `state/pending/` 配下のタスクに他の作業がないか確認する
+   - 永続タスクキュー（`Bash: animaworks-tool task list`）および `state/pending/` 配下のタスクに他の作業がないか確認する
    - ブロックされていない別のタスクに着手する
 
 ---
@@ -176,7 +176,7 @@ send_message(
      ```
 
 4. **ディレクトリを直接確認する**
-   - 検索でヒットしない場合は `list_directory` でディレクトリの内容を一覧する。`path` を省略すると anima_dir のルートが表示され、knowledge/, procedures/, episodes/ 等のサブディレクトリが確認できる
+   - 検索でヒットしない場合は `Glob` でディレクトリの内容を一覧する。`path` を省略すると anima_dir のルートが表示され、knowledge/, procedures/, episodes/ 等のサブディレクトリが確認できる
    - ファイル名から目的のファイルを見つけて直接読む:
      ```
      read_memory_file(path="procedures/slack-setup.md")
@@ -270,7 +270,7 @@ send_message(
 
 1. **スキルでツールの使い方を確認する**
    - `skill` ツールでスキル名を指定し、手順の全文を取得する。スキル一覧はツール説明の `<available_skills>` ブロックに表示される
-   - B-mode で外部ツールが許可されている場合、`use_tool` で構造化呼び出しが可能
+   - B-mode で外部ツールが許可されている場合、`Bash: animaworks-tool <ツール> <サブコマンド>` で呼び出しが可能
 
 2. **権限を確認する**
    ```
@@ -284,12 +284,12 @@ send_message(
    - 依頼時は「なぜそのツールが必要か」を明記すること
 
 4. **S-mode（Claude Agent SDK / MCP）の場合**
-   - 組み込みツールは `mcp__aw__*` プレフィックスで利用可能（例: `mcp__aw__send_message`）。見つからない場合はプロセス再起動が必要
-   - 外部ツールは `skill` ツールでCLI使用法を確認し、**Bash** 経由で `animaworks-tool <ツール> <サブコマンド>` を実行する（`execute_command` ではなく Claude Code の Bash ツールを使用）
+   - 組み込みツールはプレフィックスなしで利用可能（例: `send_message`）。見つからない場合はプロセス再起動が必要
+   - 外部ツールは `skill` ツールでCLI使用法を確認し、**Bash** 経由で `animaworks-tool <ツール> <サブコマンド>` を実行する（Claude Code の Bash ツールを使用）
    - 長時間ツール（画像生成、ローカルLLM等）は `animaworks-tool submit` で非同期実行
 
 5. **A-mode（LiteLLM）の場合**
-   - 外部ツールは `skill` で使い方を確認し、`execute_command` 経由で `animaworks-tool <ツール> <サブコマンド>` を実行する
+   - 外部ツールは `skill` で使い方を確認し、**Bash** 経由で `animaworks-tool <ツール> <サブコマンド>` を実行する
 
 6. **ツールがエラーを返す場合**
    - エラーメッセージを正確に記録する
@@ -448,8 +448,8 @@ send_message(
 ### ファイルが見つからない
 
 - **原因**: パスの指定ミス、ファイルが存在しない
-- **対処**: `list_directory` でディレクトリ内容を確認してからパスを指定する
-- **注意**: `read_memory_file` は Anima ディレクトリからの相対パス（例: `knowledge/xxx.md`, `reference/organization/structure.md`）。`read_file` は絶対パスを使用する
+- **対処**: `Glob` でディレクトリ内容を確認してからパスを指定する
+- **注意**: `read_memory_file` は Anima ディレクトリからの相対パス（例: `knowledge/xxx.md`, `reference/organization/structure.md`）。`Read` は絶対パスを使用する
 
 ### read_channel で inbox を指定できない
 
@@ -459,7 +459,7 @@ send_message(
 ### コマンドがタイムアウトする
 
 - **原因**: 処理時間が `timeout` を超えた
-- **対処**: `execute_command` の `timeout` パラメータを増やす（デフォルト: 30秒）
+- **対処**: Bash 実行時の `timeout` パラメータを増やす（デフォルト: 30秒）
 - **注意**: 長時間実行するコマンドには適切なタイムアウト値を設定すること
 
 ### 相手のAnimaが存在しない

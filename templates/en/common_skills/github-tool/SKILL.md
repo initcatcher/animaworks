@@ -10,11 +10,9 @@ tags: [development, github, external]
 
 External tool for GitHub issue and PR management via gh CLI.
 
-## Invocation via use_tool
+## Invocation via Bash
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "github", "action": "ACTION", "args": {...}}}
-```
+Use **Bash** with `animaworks-tool github <subcommand> [args]`. See Actions below for syntax.
 
 ## Actions
 

@@ -10,11 +10,9 @@ tags: [communication, chatwork, external]
 
 External tool for Chatwork messaging, search, and room management.
 
-## Invocation via use_tool
+## Invocation via Bash
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "chatwork", "action": "ACTION", "args": {...}}}
-```
+Use **Bash** with `animaworks-tool chatwork <subcommand> [args]`. See Actions below for syntax.
 
 ## Actions
 

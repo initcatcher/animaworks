@@ -10,11 +10,9 @@ tags: [productivity, notion, external]
 
 External tool for searching, reading, creating, and updating Notion pages and databases via the Notion API.
 
-## Invocation via use_tool
+## Invocation via Bash
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "notion", "action": "ACTION", "args": {...}}}
-```
+Use **Bash** with `animaworks-tool notion <subcommand> [args]`. See Actions below for syntax.
 
 ## Actions
 

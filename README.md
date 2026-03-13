@@ -172,7 +172,7 @@ Runs on any LLM. Each Anima can use a different model.
 |------|--------|----------|-------|
 | S (SDK) | Claude Agent SDK | Claude models (recommended) | Full: Read/Write/Edit/Bash/Grep/Glob |
 | C (Codex) | Codex SDK | OpenAI Codex CLI models | Full: same as Mode S |
-| A (Autonomous) | LiteLLM + tool_use | GPT, Gemini, Mistral, vLLM, etc. | search_memory, read/write_file, send_message, etc. |
+| A (Autonomous) | LiteLLM + tool_use | GPT, Gemini, Mistral, vLLM, etc. | search_memory, Read, Write, send_message, etc. |
 | B (Basic) | LiteLLM 1-shot | Ollama, small local models | Framework handles memory I/O on behalf of the model |
 
 Mode is auto-detected from the model name. Heartbeats, Cron, and Inbox can run on a lighter model than the main one (cost optimization). Extended thinking is supported for models that have it.

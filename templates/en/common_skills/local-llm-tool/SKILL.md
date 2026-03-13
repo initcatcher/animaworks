@@ -10,11 +10,9 @@ tags: [llm, local, ollama, external]
 
 External tool for text generation and chat via local LLM (Ollama/vLLM).
 
-## Invocation via use_tool
+## Invocation via Bash
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "local_llm", "action": "ACTION", "args": {...}}}
-```
+Use **Bash** with `animaworks-tool local_llm <subcommand> [args]`. See Actions below for syntax.
 
 ## Actions
 

@@ -5,7 +5,7 @@
 ## 作業手順
 
 ### 1. 知識ファイルの棚卸し
-`list_directory` で knowledge/ 内のファイル一覧を確認してください。
+`Glob` で knowledge/ 内のファイル一覧を確認してください。
 ファイル数が多い場合は `search_memory` で類似トピックを検索し、重複候補を特定してください。
 
 ### 2. 重複・類似ファイルの統合
@@ -27,13 +27,13 @@
 孤立した `[IMPORTANT]`（関連グループなし）や30日未満のものはスキップ。既に概念レベルのものは再統合不要。
 
 ### 4. 手続き知識の整理
-`list_directory` で procedures/ 内のファイルを確認し:
+`Glob` で procedures/ 内のファイルを確認し:
 - 古くなった手順 → 現状に合わせて更新するか、`archive_memory_file` でアーカイブ
 - 使われていない手順 → アーカイブを検討
 - 類似の手順 → 統合
 
 ### 5. 古いエピソードの圧縮
-`list_directory` で episodes/ を確認し、30日以上前のファイルがあれば:
+`Glob` で episodes/ を確認し、30日以上前のファイルがあれば:
 - `read_memory_file` で内容を確認
 - [IMPORTANT] タグがないものは要点のみに圧縮して `write_memory_file` で上書き
 

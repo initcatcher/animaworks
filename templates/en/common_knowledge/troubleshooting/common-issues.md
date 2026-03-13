@@ -126,7 +126,7 @@ send_message(
    ```
 
 5. **Check for other work**
-   - Review persistent task queue (`list_tasks`) and tasks under `state/pending/`
+   - Review persistent task queue (`Bash: animaworks-tool task list`) and tasks under `state/pending/`
    - Start another task that is not blocked
 
 ---
@@ -176,7 +176,7 @@ send_message(
      ```
 
 4. **Check directories directly**
-   - If search fails, use `list_directory` to list directory contents. Omitting `path` shows the anima_dir root and subdirectories such as knowledge/, procedures/, episodes/
+   - If search fails, use `Glob` to list directory contents. Omitting `path` shows the anima_dir root and subdirectories such as knowledge/, procedures/, episodes/
    - Find the file by name and read directly:
      ```
      read_memory_file(path="procedures/slack-setup.md")
@@ -270,7 +270,7 @@ send_message(
 
 1. **Look up tool usage via skill**
    - Use the `skill` tool with the skill name to get the full procedure. Skill list is shown in the `<available_skills>` block of the tool description
-   - In B-mode, `use_tool` provides structured invocation when external tools are allowed
+   - In B-mode, external tools are invoked via **Bash** with `animaworks-tool <tool> <subcommand>` when allowed
 
 2. **Check permissions**
    ```
@@ -284,12 +284,12 @@ send_message(
    - Clearly state why the tool is needed when requesting
 
 4. **S-mode (Claude Agent SDK / MCP)**
-   - Built-in tools are available with `mcp__aw__*` prefix (e.g. `mcp__aw__send_message`). Restart process if not found
-   - External tools: look up usage via `skill` tool and execute via **Bash** with `animaworks-tool <tool> <subcommand>` (use Claude Code's Bash tool, not `execute_command`)
+   - Built-in tools are available directly (e.g. `send_message`). Restart process if not found
+   - External tools: look up usage via `skill` tool and execute via **Bash** with `animaworks-tool <tool> <subcommand>`
    - Long-running tools (image gen, local LLM, etc.) run asynchronously via `animaworks-tool submit`
 
 5. **A-mode (LiteLLM)**
-   - External tools: look up usage via `skill` and execute via `execute_command` with `animaworks-tool <tool> <subcommand>`
+   - External tools: look up usage via `skill` and execute via **Bash** with `animaworks-tool <tool> <subcommand>`
 
 6. **If tool returns an error**
    - Record the error message accurately
@@ -448,8 +448,8 @@ Context window is inferred from model name in `status.json`; can be overridden i
 ### File Not Found
 
 - **Cause**: Wrong path or file does not exist
-- **Fix**: Use `list_directory` to verify directory contents before specifying path
-- **Note**: `read_memory_file` uses paths relative to Anima dir (e.g. `knowledge/xxx.md`, `reference/organization/structure.md`). `read_file` uses absolute paths
+- **Fix**: Use `Glob` to verify directory contents before specifying path
+- **Note**: `read_memory_file` uses paths relative to Anima dir (e.g. `knowledge/xxx.md`, `reference/organization/structure.md`). `Read` uses absolute paths
 
 ### Cannot Specify Inbox in read_channel
 
@@ -459,7 +459,7 @@ Context window is inferred from model name in `status.json`; can be overridden i
 ### Command Timeout
 
 - **Cause**: Execution exceeded `timeout`
-- **Fix**: Increase `timeout` parameter for `execute_command` (default: 30 seconds)
+- **Fix**: Increase `timeout` parameter for `Bash` (default: 30 seconds)
 - **Note**: Set appropriate timeout for long-running commands
 
 ### Recipient Anima Does Not Exist

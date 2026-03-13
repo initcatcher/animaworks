@@ -253,7 +253,7 @@ command: /usr/local/bin/backup.sh
 
 ### state/task_queue.jsonl — タスクキュー
 
-構造化されたタスクの追跡。`backlog_task` / `update_task` / `list_tasks` で操作する。
+構造化されたタスクの追跡。`submit_tasks` / `update_task` で操作する。一覧は `animaworks-tool task list`（CLI）。
 `source: human` のタスクは最優先で処理すること（MUST）。
 
 ### state/pending/ — 実行キュー

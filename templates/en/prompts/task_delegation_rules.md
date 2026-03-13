@@ -21,14 +21,13 @@ When you use the Task tool, the framework automatically routes based on your org
 
 | Tool | Purpose | Execution Queue (Layer 1) | Tracking (Layer 2) | When to use |
 |------|---------|--------------------------|--------------------|----|
-| `submit_tasks` | Submit tasks for execution | Creates in `state/pending/` | Registers in `task_queue.jsonl` | When you find tasks that need execution |
+| `submit_tasks` | Submit tasks for execution and registration | Creates in `state/pending/` | Registers in `task_queue.jsonl` | Tasks needing execution, recording human instructions, tasks for manual pickup |
 | `delegate_task` | Delegate to subordinates | Creates in subordinate's `state/pending/` | Registers in both `task_queue.jsonl` | When assigning to subordinates |
-| `backlog_task` | Tracking registration only | **Not created (not executed)** | Registers in `task_queue.jsonl` | Recording human instructions, tasks for manual pickup |
 | Task tool (S-mode) | Auto-routed delegation | Creates at auto-selected target | Registered | Quick delegation from Chat path |
 
-**Important**: `backlog_task` is tracking-only — TaskExec will NOT automatically execute it. Recording human instructions via `backlog_task` is MUST, but if execution is also needed, use `submit_tasks` as well.
+**Important**: Recording human instructions via `submit_tasks` is MUST. Use `submit_tasks` even for a single task (tasks array with one item).
 
-From paths without the Task tool (Heartbeat, Inbox, etc.), use `submit_tasks` / `delegate_task` / `backlog_task`.
+From paths without the Task tool (Heartbeat, Inbox, etc.), use `submit_tasks` / `delegate_task`.
 
 **[MUST] Do NOT manually create JSON files in `state/pending/`.** Always submit via the `submit_tasks` tool. `submit_tasks` registers in both the execution queue and task registry simultaneously, preventing tracking gaps.
 

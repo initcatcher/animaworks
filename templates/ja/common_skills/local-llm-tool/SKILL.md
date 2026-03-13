@@ -10,35 +10,33 @@ tags: [llm, local, ollama, external]
 
 ローカルLLM（Ollama/vLLM）経由でテキスト生成・チャットを行う外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "local_llm", "action": "ACTION", "args": {...}}}
-```
+**Bash**: `animaworks-tool local_llm <サブコマンド> [引数]` で実行
 
 ## アクション一覧
 
 ### generate — テキスト生成
-```json
-{"tool_name": "local_llm", "action": "generate", "args": {"prompt": "プロンプト", "system": "システムプロンプト(任意)", "temperature": 0.7, "max_tokens": 2048}}
+```bash
+animaworks-tool local_llm generate "プロンプト" [-S "システムプロンプト"]
 ```
 
 ### chat — チャット（複数ターン）
-```json
-{"tool_name": "local_llm", "action": "chat", "args": {"messages": [{"role": "user", "content": "質問"}], "system": "システムプロンプト(任意)"}}
+```bash
+animaworks-tool local_llm chat [--messages JSON] [-S "システムプロンプト"]
 ```
 
 ### models — モデル一覧
-```json
-{"tool_name": "local_llm", "action": "models", "args": {}}
+```bash
+animaworks-tool local_llm list
 ```
 
 ### status — サーバー状態確認
-```json
-{"tool_name": "local_llm", "action": "status", "args": {}}
+```bash
+animaworks-tool local_llm status
 ```
 
-## CLI使用法（Sモード）
+## CLI使用法
 
 ```bash
 animaworks-tool local_llm generate "プロンプト" [-S "システムプロンプト"]

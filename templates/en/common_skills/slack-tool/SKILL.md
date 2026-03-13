@@ -10,10 +10,16 @@ tags: [communication, slack, external]
 
 External tool for Slack messaging, search, reactions, and channel management.
 
-## Invocation via use_tool
+## Invocation via Bash
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "slack", "action": "ACTION", "args": {...}}}
+Use **Bash** with `animaworks-tool slack <subcommand> [args]`:
+
+```bash
+animaworks-tool slack send CHANNEL MESSAGE [--thread TS]
+animaworks-tool slack messages CHANNEL [-n 20]
+animaworks-tool slack search KEYWORD [-c CHANNEL] [-n 50]
+animaworks-tool slack unreplied [--json]
+animaworks-tool slack channels
 ```
 
 ## Actions
@@ -60,7 +66,7 @@ animaworks-tool slack unreplied [--json]
 animaworks-tool slack channels
 ```
 
-> The `react` action is not available via CLI. Use `use_tool` or MCP instead.
+> The `react` action is not available via CLI. Use MCP instead.
 
 ## Notes
 

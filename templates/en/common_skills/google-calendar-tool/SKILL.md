@@ -11,11 +11,9 @@ tags: [calendar, google, schedule, external]
 
 External tool for Google Calendar event management via OAuth2 API access.
 
-## Invocation via use_tool
+## Invocation via Bash
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "google_calendar", "action": "ACTION", "args": {...}}}
-```
+Use **Bash** with `animaworks-tool google_calendar <subcommand> [args]`. See Actions below for syntax.
 
 ## Actions
 

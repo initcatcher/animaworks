@@ -45,8 +45,8 @@ Analogous to an issue tracker (Jira / GitHub Issues).
 | Format | Append-only JSONL (TaskEntry schema) |
 | Lifecycle | Register → status transitions → compact to archive (persistent) |
 | Managed by | Anima (via tools) + System (Priming injection, compact) |
-| Writers | `backlog_task`, `update_task`, `delegate_task` |
-| Readers | `list_tasks`, `format_for_priming`, Heartbeat compact |
+| Writers | `submit_tasks`, `update_task`, `delegate_task` |
+| Readers | `format_for_priming`, Heartbeat compact (list via CLI: animaworks-tool task list) |
 
 Holds task summary information (task_id, summary, status, deadline, assignee).
 Priming Channel E injects pending/in_progress tasks into the system prompt.
@@ -72,7 +72,7 @@ Content may overlap with Layer 2. Layer 3 is Anima's thinking space for organizi
 ### Data Flow
 
 ```
-Human instruction ─┬─► backlog_task ───────────────► Layer 2 (task_queue.jsonl)
+Human instruction ─┬─► submit_tasks ───────────────► Layer 2 (task_queue.jsonl)
                    └─► Anima writes current_task.md ► Layer 3
 
 submit_tasks ─┬─► state/pending/*.json ──────► Layer 1 (Execution Queue)
@@ -106,7 +106,7 @@ PendingTaskExecutor ─┬─► Success → Update task_queue to done
 
 ## Design Principles
 
-1. **All tasks are registered in Layer 2**: Whether via submit_tasks, delegate_task, or backlog_task, an entry exists in task_queue.jsonl
+1. **All tasks are registered in Layer 2**: Whether via submit_tasks or delegate_task, an entry exists in task_queue.jsonl
 2. **Layer 1 is transient**: Execution queue files are deleted after consumption. Persistent records are Layer 2's responsibility
 3. **Layer 2 is the SSoT**: The "official status" of a task is determined by task_queue.jsonl status
 4. **Layer 3 is free**: It is Anima's working memory; the system imposes no constraints

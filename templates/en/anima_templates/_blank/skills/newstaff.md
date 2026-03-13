@@ -128,8 +128,10 @@ This automatically performs:
 
 ### 5. Apply to Server
 
-```
-execute_command(command="curl -s -X POST http://localhost:18500/api/system/reload")
+Use **Bash** to reload the server:
+
+```bash
+curl -s -X POST http://localhost:18500/api/system/reload
 ```
 
 ### 6. Report to Requester

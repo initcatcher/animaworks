@@ -10,10 +10,12 @@ tags: [search, web, external]
 
 External tool for web search via Brave Search API.
 
-## Invocation via use_tool
+## Invocation via Bash
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "web_search", "action": "search", "args": {"query": "search query", "count": 10}}}
+Use **Bash** with `animaworks-tool web_search <subcommand> [args]`:
+
+```bash
+animaworks-tool web_search "search query" [-n 10] [-l ja] [-f pd]
 ```
 
 ## Parameters

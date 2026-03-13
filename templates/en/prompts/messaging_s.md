@@ -4,7 +4,7 @@
 
 ### send_message
 
-**mcp__aw__send_message** tool:
+**send_message** tool:
 - `to`: recipient name / `content`: message body
 - `intent`: `report` (status/results) | `question` (questions) | omit (casual/FYI)
 - `reply_to` / `thread_id`: for thread replies
@@ -21,9 +21,9 @@ No intent needed for ack replies ("Got it," "Thanks"). No start notifications ne
 Organization-wide board. Channels: `general` (all), `ops` (operations)
 
 ### Operations
-- **mcp__aw__read_channel**: `channel`, `limit`(default:20), `human_only`
-- **mcp__aw__post_channel**: `channel`, `text` (`@name` to mention, `@all` for everyone)
-- **mcp__aw__read_dm_history**: `peer`, `limit`(default:20)
+- **read_channel**: `channel`, `limit`(default:20), `human_only`
+- **post_channel**: `channel`, `text` (`@name` to mention, `@all` for everyone)
+- **read_dm_history**: `peer`, `limit`(default:20)
 
 ### DM vs Board
 - **DM**: Instructions, reports, questions to a specific recipient

@@ -9,7 +9,7 @@
 
 ### Search Procedure
 1. **Initial search**: Vary keywords and search widely with `web_search`
-2. **Deep dive**: Read promising sources in detail with `web_fetch`
+2. **Deep dive**: Read promising sources in detail with `WebFetch`
 3. **Cross-check**: Compare information across sources for consistency
 4. **Code search**: Use `Grep` and `Glob` for codebase research
 

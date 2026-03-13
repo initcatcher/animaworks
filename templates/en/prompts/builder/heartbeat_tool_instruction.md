@@ -6,7 +6,7 @@ Use tools for **observation, reporting, planning, and follow-up** during Heartbe
 Complete observation → planning → task file creation / follow-ups within 20 steps.
 
 **[MUST] If you find anything that requires action, you MUST create a task within this Heartbeat.**
-"Acknowledged but no action taken" or "will handle in next Heartbeat" is prohibited. Use delegate_task / submit_tasks / backlog_task / send_message to take immediate action.
+"Acknowledged but no action taken" or "will handle in next Heartbeat" is prohibited. Use delegate_task / submit_tasks / send_message to take immediate action.
 
 Do not perform actual work yourself during Heartbeat. Task execution is handled automatically in a separate session (TaskExec).
 

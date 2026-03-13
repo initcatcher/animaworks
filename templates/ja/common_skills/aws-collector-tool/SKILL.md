@@ -10,30 +10,28 @@ tags: [infrastructure, aws, monitoring, external]
 
 AWS ECSステータス・CloudWatchログ・メトリクスを収集する外部ツール。
 
-## use_tool での呼び出し
+## 呼び出し方法
 
-```json
-{"tool": "use_tool", "arguments": {"tool_name": "aws_collector", "action": "ACTION", "args": {...}}}
-```
+**Bash**: `animaworks-tool aws_collector <サブコマンド> [引数]` で実行
 
 ## アクション一覧
 
 ### ecs_status — ECSサービス状態確認
-```json
-{"tool_name": "aws_collector", "action": "ecs_status", "args": {"cluster": "クラスタ名", "service": "サービス名(任意)"}}
+```bash
+animaworks-tool aws_collector ecs-status [--cluster NAME] [--service NAME]
 ```
 
 ### error_logs — エラーログ取得
-```json
-{"tool_name": "aws_collector", "action": "error_logs", "args": {"log_group": "ロググループ名", "hours": 1, "patterns": "ERROR,Exception"}}
+```bash
+animaworks-tool aws_collector error-logs --log-group NAME [--hours 1] [--patterns "ERROR"]
 ```
 
 ### metrics — メトリクス取得
-```json
-{"tool_name": "aws_collector", "action": "metrics", "args": {"cluster": "クラスタ名", "service": "サービス名", "metric": "CPUUtilization", "hours": 1}}
+```bash
+animaworks-tool aws_collector metrics --cluster NAME --service NAME [--metric CPUUtilization]
 ```
 
-## CLI使用法（Sモード）
+## CLI使用法
 
 ```bash
 animaworks-tool aws_collector ecs-status [--cluster NAME] [--service NAME]
