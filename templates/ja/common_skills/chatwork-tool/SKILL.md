@@ -12,62 +12,53 @@ Chatworkのメッセージ送受信・検索・管理を行う外部ツール。
 
 ## 呼び出し方法
 
-**S-mode（推奨）**: Bash で `animaworks-tool chatwork` を実行
-
-```bash
-animaworks-tool chatwork send ROOM MESSAGE
-animaworks-tool chatwork messages ROOM [-n 20]
-animaworks-tool chatwork search KEYWORD [-r ROOM] [-n 50]
-# 他は下記アクション一覧を参照
-```
-
-**A/B-mode**: `use_tool(tool_name="chatwork", action="ACTION", args={...})` で構造化呼び出し
+**Bash**: `animaworks-tool chatwork <サブコマンド> [引数]` で実行。構文は下記を参照。
 
 ## アクション一覧
 
 ### send — メッセージ送信
-```json
-{"tool_name": "chatwork", "action": "send", "args": {"room": "ルーム名またはID", "message": "送信テキスト"}}
+```bash
+animaworks-tool chatwork send ROOM MESSAGE
 ```
 
 ### messages — メッセージ取得
-```json
-{"tool_name": "chatwork", "action": "messages", "args": {"room": "ルーム名またはID", "limit": 20}}
+```bash
+animaworks-tool chatwork messages ROOM [-n 20]
 ```
 
 ### search — メッセージ検索
-```json
-{"tool_name": "chatwork", "action": "search", "args": {"keyword": "検索ワード", "room": "ルーム名(任意)", "limit": 50}}
+```bash
+animaworks-tool chatwork search KEYWORD [-r ROOM] [-n 50]
 ```
 
 ### unreplied — 未返信メッセージ確認
-```json
-{"tool_name": "chatwork", "action": "unreplied", "args": {"include_toall": false}}
+```bash
+animaworks-tool chatwork unreplied [--json]
 ```
 - `include_toall` (任意, デフォルト: false): 全体宛メッセージを含めるか
 
 ### rooms — ルーム一覧
-```json
-{"tool_name": "chatwork", "action": "rooms", "args": {}}
+```bash
+animaworks-tool chatwork rooms
 ```
 
 ### mentions — メンション取得
-```json
-{"tool_name": "chatwork", "action": "mentions", "args": {"include_toall": false}}
+```bash
+animaworks-tool chatwork mentions [--json]
 ```
 - `include_toall` (任意, デフォルト: false): 全体宛メッセージを含めるか
 
 ### delete — メッセージ削除（自分の発言のみ）
-```json
-{"tool_name": "chatwork", "action": "delete", "args": {"room": "ルーム名またはID", "message_id": "メッセージID"}}
+```bash
+animaworks-tool chatwork delete ROOM MESSAGE_ID
 ```
 
 ### sync — メッセージ同期（キャッシュ更新）
-```json
-{"tool_name": "chatwork", "action": "sync", "args": {"room": "ルーム名またはID"}}
+```bash
+animaworks-tool chatwork sync [ROOM]
 ```
 
-## CLI使用法（Sモード）
+## CLI使用法
 
 ```bash
 animaworks-tool chatwork send ROOM MESSAGE

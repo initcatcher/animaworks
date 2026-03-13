@@ -12,13 +12,7 @@ Brave Search APIを使ったWeb検索外部ツール。
 
 ## 呼び出し方法
 
-**S-mode（推奨）**: Bash で `animaworks-tool web_search` を実行
-
-```bash
-animaworks-tool web_search "検索クエリ" [-n 10] [-l ja] [-f pd]
-```
-
-**A/B-mode**: `use_tool(tool_name="web_search", action="search", args={...})` で構造化呼び出し
+**Bash**: `animaworks-tool web_search "検索クエリ" [オプション]` で実行
 
 ## パラメータ
 
@@ -29,7 +23,7 @@ animaworks-tool web_search "検索クエリ" [-n 10] [-l ja] [-f pd]
 | lang | string | "ja" | 検索言語 |
 | freshness | string | null | 鮮度フィルタ (pd=24h, pw=1週間, pm=1ヶ月, py=1年) |
 
-## CLI使用法（Sモード）
+## CLI使用法
 
 ```bash
 animaworks-tool web_search "検索クエリ" [-n 10] [-l ja] [-f pd]

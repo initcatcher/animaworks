@@ -1111,6 +1111,13 @@ _STRINGS: dict[str, dict[str, str]] = {
             "いずれの場合も:\n"
             "- 具体的な手順が伴う場合は procedures/ にも手順書を作成する\n"
             "- 更新完了を指示者に報告する\n"
+            "\n"
+            "### CLI経由のツール\n"
+            "スーパーバイザー管理、vault、チャネル管理、バックグラウンドタスク、外部ツール（Slack, Chatwork, Gmail, GitHub等）:\n"
+            "```\n"
+            "Bash: animaworks-tool <tool> <subcommand> [args]\n"
+            "```\n"
+            "利用可能なCLIコマンドは `skill machine-tool` で確認。\n"
             ""
         ),
         "en": (
@@ -1220,6 +1227,13 @@ _STRINGS: dict[str, dict[str, str]] = {
             "In both cases:\n"
             "- Create procedures/ doc when specific steps are involved\n"
             "- Report completion to the requester\n"
+            "\n"
+            "### Other Tools via CLI\n"
+            "For supervisor management, vault, channel management, background tasks, and external tools (Slack, Chatwork, Gmail, GitHub, etc.):\n"
+            "```\n"
+            "Bash: animaworks-tool <tool> <subcommand> [args]\n"
+            "```\n"
+            "Use `skill machine-tool` to see available CLI commands.\n"
             ""
         ),
     },

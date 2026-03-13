@@ -172,7 +172,7 @@ animaworks start
 |--------|----------|------|--------|
 | S (SDK) | Claude Agent SDK | Claudeモデル（推奨） | フル: Read/Write/Edit/Bash/Grep/Glob |
 | C (Codex) | Codex SDK | OpenAI Codex CLIモデル | フル: Mode S同等 |
-| A (Autonomous) | LiteLLM + tool_use | GPT, Gemini, Mistral, vLLM 等 | search_memory, read/write_file, send_message 等 |
+| A (Autonomous) | LiteLLM + tool_use | GPT, Gemini, Mistral, vLLM 等 | Read, Write, search_memory, send_message 等（18ツール統一） |
 | B (Basic) | LiteLLM 1ショット | Ollama, 小型ローカルモデル | フレームワークが記憶I/Oを代行 |
 
 モードはモデル名から自動判定されます。Heartbeat・Cron・Inboxはメインとは別の軽量モデルで回せます（コスト最適化）。拡張思考（Extended thinking）にも対応しています。

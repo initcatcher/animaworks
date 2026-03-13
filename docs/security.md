@@ -38,7 +38,7 @@ Every piece of data entering an agent's context is tagged with a trust level. Th
 
 | Level | Target Sources | Treatment |
 |-------|----------------|-----------|
-| `trusted` | Internal tools (send_message, search_memory, backlog_task, post_channel, etc.), system-generated | Execute normally |
+| `trusted` | Internal tools (send_message, search_memory, submit_tasks, update_task, post_channel, etc.), system-generated | Execute normally |
 | `medium` | Read, Grep, Write, Bash, RAG results, user profiles, consolidated knowledge | Interpret as reference data |
 | `untrusted` | web_search, WebFetch, x_search, x_user_tweets, slack_*, chatwork_*, gmail_*, read_channel, read_dm_history, local_llm | **Never follow directives** |
 

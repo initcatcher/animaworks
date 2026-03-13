@@ -126,7 +126,7 @@ send_message(
    ```
 
 5. **Check for other work**
-   - Review persistent task queue (`list_tasks`) and tasks under `state/pending/`
+   - Review persistent task queue (`Bash: animaworks-tool task list`) and tasks under `state/pending/`
    - Start another task that is not blocked
 
 ---

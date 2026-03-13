@@ -12,23 +12,16 @@ X (Twitter) の検索・ツイート取得を行う外部ツール。
 
 ## 呼び出し方法
 
-**S-mode（推奨）**: Bash で `animaworks-tool x_search` を実行
-
-```bash
-animaworks-tool x_search "検索クエリ" [-n 10] [--days 7]
-animaworks-tool x_search --user @username [-n 10]
-```
-
-**A/B-mode**: `use_tool(tool_name="x_search", action="search"|"user_tweets", args={...})` で構造化呼び出し
+**Bash**: `animaworks-tool x_search "検索クエリ" [オプション]` または `animaworks-tool x_search --user @username` で実行
 
 ### search — キーワード検索
-```json
-{"tool_name": "x_search", "action": "search", "args": {"query": "検索クエリ", "count": 10, "days": 7}}
+```bash
+animaworks-tool x_search "検索クエリ" [-n 10] [--days 7]
 ```
 
 ### user_tweets — ユーザーのツイート取得
-```json
-{"tool_name": "x_search", "action": "user_tweets", "args": {"user": "@ユーザー名", "count": 10}}
+```bash
+animaworks-tool x_search --user @username [-n 10]
 ```
 
 ## パラメータ
@@ -40,7 +33,7 @@ animaworks-tool x_search --user @username [-n 10]
 | count | integer | 10 | 取得件数 |
 | days | integer | 7 | 検索対象日数 |
 
-## CLI使用法（Sモード）
+## CLI使用法
 
 ```bash
 animaworks-tool x_search "検索クエリ" [-n 10] [--days 7]

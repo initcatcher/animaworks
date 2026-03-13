@@ -868,10 +868,9 @@ Group 6: メタ設定
 
 | ツール | 説明 |
 |--------|------|
-| `backlog_task` | タスクキューへの追加 |
+| `submit_tasks` | タスクキューへの追加・複数タスクのDAG投入（依存関係解決・並列実行） |
 | `update_task` | タスク状態の更新 |
-| `list_tasks` | タスク一覧の取得 |
-| `submit_tasks` | 複数タスクのDAG投入（依存関係解決・並列実行） |
+| タスク一覧 | CLI: `animaworks-tool task list` で取得 |
 
 **スキル:**
 

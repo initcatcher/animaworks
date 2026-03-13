@@ -12,41 +12,32 @@ GitHubのIssue・PRをgh CLI経由で操作する外部ツール。
 
 ## 呼び出し方法
 
-**S-mode（推奨）**: Bash で `animaworks-tool github` を実行
-
-```bash
-animaworks-tool github issues [--repo OWNER/REPO] [--state open] [--limit 20]
-animaworks-tool github create-issue --title TITLE --body BODY [--labels LABELS]
-animaworks-tool github prs [--repo OWNER/REPO] [--state open] [--limit 20]
-animaworks-tool github create-pr --title TITLE --body BODY --head BRANCH [--base main]
-```
-
-**A/B-mode**: `use_tool(tool_name="github", action="ACTION", args={...})` で構造化呼び出し
+**Bash**: `animaworks-tool github <サブコマンド> [引数]` で実行
 
 ## アクション一覧
 
 ### list_issues — Issue一覧
-```json
-{"tool_name": "github", "action": "list_issues", "args": {"repo": "owner/repo", "state": "open", "limit": 20}}
+```bash
+animaworks-tool github issues [--repo OWNER/REPO] [--state open] [--limit 20]
 ```
 
 ### create_issue — Issue作成
-```json
-{"tool_name": "github", "action": "create_issue", "args": {"title": "タイトル", "body": "本文", "labels": "bug,enhancement"}}
+```bash
+animaworks-tool github create-issue --title TITLE --body BODY [--labels LABELS]
 ```
 
 ### list_prs — PR一覧
-```json
-{"tool_name": "github", "action": "list_prs", "args": {"repo": "owner/repo", "state": "open", "limit": 20}}
+```bash
+animaworks-tool github prs [--repo OWNER/REPO] [--state open] [--limit 20]
 ```
 
 ### create_pr — PR作成
-```json
-{"tool_name": "github", "action": "create_pr", "args": {"title": "タイトル", "body": "本文", "head": "feature-branch", "base": "main", "draft": false}}
+```bash
+animaworks-tool github create-pr --title TITLE --body BODY --head BRANCH [--base main]
 ```
 - `draft` (任意, デフォルト: false): ドラフトPRとして作成するか
 
-## CLI使用法（Sモード）
+## CLI使用法
 
 ```bash
 animaworks-tool github issues [--repo OWNER/REPO] [--state open] [--limit 20]

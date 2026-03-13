@@ -3,7 +3,7 @@ name: tool-creator
 description: >-
   AnimaWorks用のPythonツールモジュールを正しいインターフェースで作成するメタスキル。
   個人ツール（animas/{name}/tools/）・共有ツール（common_tools/）の作成手順、
-  ExternalToolDispatcher連携、Bash/use_tool経由の呼び出し、get_credentialによるAPIキー管理、
+  ExternalToolDispatcher連携、Bash + animaworks-tool 経由の呼び出し、get_credentialによるAPIキー管理、
   permissions.md許可設定、EXECUTION_PROFILEによる長時間実行対応を提供。
   Web API連携・外部サービス統合のカスタムツール開発時に使用。
   「ツールを作成」「ツール化」「新しいツール」「カスタムツール」「Python ツール」
@@ -23,7 +23,7 @@ AnimaWorksのツールは3種類に分かれる:
 
 `{data_dir}` は通常 `~/.animaworks/`。個人ツール・共有ツールは `ExternalToolDispatcher` が `refresh_tools` で再スキャンし、ホットリロード可能。同一ツール名の場合、個人ツールが共有ツールを上書きする（`{**common, **personal}`）。ToolHandler は `write_memory_file` で `tools/*.py` への書き込み時に permissions.md の「ツール作成」セクションで許可をチェックする。
 
-個人ツール・共有ツールは **S-mode** では Bash 経由で `animaworks-tool <ツール> <サブコマンド>` を実行。**A/B-mode** では `use_tool(tool_name="...", action="...", args={...})` 経由で呼び出される。スキーマ名は `{tool_name}_{action}` 形式（例: `my_tool` + `query` → `my_tool_query`）。
+個人ツール・共有ツールは **Bash** 経由で `animaworks-tool <ツール> <サブコマンド> [引数]` を実行する。スキーマ名は `{tool_name}_{action}` 形式（例: `my_tool` + `query` → `my_tool_query`）。
 
 ## 手順
 
@@ -39,7 +39,7 @@ AnimaWorksのツールは3種類に分かれる:
 
 #### 単一スキーマのツール（シンプル）
 
-ファイル名 `my_tool.py` の場合、`use_tool(tool_name="my_tool", action="action", args={...})` で呼ばれ、スキーマ名 `my_tool_action` として dispatch に渡される。
+ファイル名 `my_tool.py` の場合、`animaworks-tool my_tool action [args]` で呼び出され、スキーマ名 `my_tool_action` として dispatch に渡される。
 
 ```python
 from __future__ import annotations
@@ -77,7 +77,7 @@ def get_tool_schemas() -> list[dict]:
 
 def dispatch(name: str, args: dict[str, Any]) -> Any:
     """スキーマ名に応じた処理を実行する（推奨）。"""
-    args.pop("anima_dir", None)  # use_tool 経由で注入されるが、本ツールでは未使用
+    args.pop("anima_dir", None)  # フレームワークから注入されるが、本ツールでは未使用
     if name == "my_tool_action":
         return _do_action(
             param1=args["param1"],
@@ -94,7 +94,7 @@ def _do_action(param1: str, param2: int = 10) -> dict[str, Any]:
 
 #### 複数スキーマのツール（API連携等）
 
-スキーマ名は `{ツール名}_{アクション}` 形式にする。`use_tool(tool_name="myapi", action="query", args={...})` 呼び出し時に `myapi_query` として dispatch に渡される。ファイル名は `myapi.py`。
+スキーマ名は `{ツール名}_{アクション}` 形式にする。`animaworks-tool myapi query [args]` 呼び出し時に `myapi_query` として dispatch に渡される。ファイル名は `myapi.py`。
 
 ```python
 from __future__ import annotations
@@ -166,7 +166,7 @@ class MyAPIClient:
 
 
 def dispatch(name: str, args: dict[str, Any]) -> Any:
-    args.pop("anima_dir", None)  # use_tool 経由で注入されるが、本ツールでは未使用
+    args.pop("anima_dir", None)  # フレームワークから注入されるが、本ツールでは未使用
     client = MyAPIClient()
     if name == "myapi_query":
         return client.query(
@@ -196,7 +196,7 @@ write_memory_file(path="tools/my_tool.py", content=<コード>)
 refresh_tools()
 ```
 
-これにより、セッションを再起動せずに即座にツールが使えるようになる。個人ツール・共有ツールは permissions.md の「外部ツール」セクションに登録不要。`refresh_tools` で発見されれば S-mode では Bash + animaworks-tool、A/B-mode では `use_tool` から呼び出し可能。
+これにより、セッションを再起動せずに即座にツールが使えるようになる。個人ツール・共有ツールは permissions.md の「外部ツール」セクションに登録不要。`refresh_tools` で発見されれば Bash + animaworks-tool から呼び出し可能。
 
 ### Step 5: 共有（任意）
 
@@ -220,9 +220,7 @@ share_tool(tool_name="my_tool")
 
 ## 呼び出し方法
 
-**S-mode**: Anima は Bash 経由で `animaworks-tool <ツール> <サブコマンド>` を実行する。CLI の `cli_main(argv)` が呼ばれる。
-
-**A/B-mode**: `use_tool(tool_name="myapi", action="query", args={"query": "検索語", "limit": 10})` を使用。`schema_name = tool_name + "_" + action` として `dispatch(name, args)` に渡される（上記例では `name="myapi_query"`）。
+Anima は **Bash** 経由で `animaworks-tool <ツール> <サブコマンド> [引数]` を実行する。CLI の `cli_main(argv)` が呼ばれる。`schema_name = tool_name + "_" + action` として `dispatch(name, args)` に渡される（例: `animaworks-tool myapi query "検索語" --limit 10` → `name="myapi_query"`）。
 
 ## スキーマ定義の規約
 
@@ -230,7 +228,7 @@ share_tool(tool_name="my_tool")
 
 ```python
 {
-    "name": "tool_action_name",       # スネークケース。use_tool では {tool_name}_{action} 形式
+    "name": "tool_action_name",       # スネークケース。{tool_name}_{action} 形式
     "description": "1-2文の説明",      # LLMがツール選択に使う
     "input_schema": {                  # JSON Schema形式（parameters も可）
         "type": "object",
@@ -288,7 +286,7 @@ EXECUTION_PROFILE: dict[str, dict[str, object]] = {
 - [ ] ファイル名: スネークケース、`.py` 拡張子（例: `my_tool.py`）
 - [ ] `from __future__ import annotations` がファイル先頭にあるか
 - [ ] `get_tool_schemas()` が存在し、リストを返すか
-- [ ] スキーマ名が `{tool_name}_{action}` 形式か（use_tool 連携）
+- [ ] スキーマ名が `{tool_name}_{action}` 形式か（animaworks-tool 連携）
 - [ ] スキーマに `name`, `description`, `input_schema`（または `parameters`）があるか
 - [ ] `dispatch()` またはスキーマ名と同名の関数が存在するか
 - [ ] `dispatch()` で `args.pop("anima_dir", None)` しているか（args を他関数に渡す場合）
@@ -314,7 +312,7 @@ EXECUTION_PROFILE: dict[str, dict[str, object]] = {
 - ツール作成には permissions.md の「ツール作成」セクションで **個人ツール: yes** の許可が必要です
 - 共有ツール化には **共有ツール: yes** の許可が必要です
 - 作成したツールは `refresh_tools` 呼び出しで即座に発見されます（ホットリロード）
-- 個人ツール・共有ツールは permissions.md の「外部ツール」セクションに登録不要。`refresh_tools` で発見されれば S-mode では Bash + animaworks-tool、A/B-mode では `use_tool` から利用可能（コアツールのみ外部ツールで許可制御）
+- 個人ツール・共有ツールは permissions.md の「外部ツール」セクションに登録不要。`refresh_tools` で発見されれば Bash + animaworks-tool から利用可能（コアツールのみ外部ツールで許可制御）
 - スキーマ名は `{tool_name}_{action}` 形式。他ツールと衝突しないよう一意にすること
 - コアツールと同名の個人・共有ツールはシャドウされるためスキップされます（`discover_common_tools` / `discover_personal_tools`）
 - 参考実装: `core/tools/web_search.py`, `core/tools/chatwork.py`, `core/tools/image_gen.py`

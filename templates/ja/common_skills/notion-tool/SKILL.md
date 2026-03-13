@@ -12,63 +12,55 @@ Notion API 経由でページ・データベースの検索・取得・作成・
 
 ## 呼び出し方法
 
-**S-mode（推奨）**: Bash で `animaworks-tool notion` を実行
-
-```bash
-animaworks-tool notion search [検索ワード] -j
-animaworks-tool notion get-page PAGE_ID -j
-# 他は下記アクション一覧を参照
-```
-
-**A/B-mode**: `use_tool(tool_name="notion", action="ACTION", args={...})` で構造化呼び出し
+**Bash**: `animaworks-tool notion <サブコマンド> [引数]` で実行
 
 ## アクション一覧
 
 ### search — ワークスペース検索
-```json
-{"tool_name": "notion", "action": "search", "args": {"query": "検索ワード", "page_size": 10}}
+```bash
+animaworks-tool notion search [検索ワード] -j
 ```
 
 ### get_page — ページメタデータ取得
-```json
-{"tool_name": "notion", "action": "get_page", "args": {"page_id": "ページID"}}
+```bash
+animaworks-tool notion get-page PAGE_ID -j
 ```
 
 ### get_page_content — ページ本文取得
-```json
-{"tool_name": "notion", "action": "get_page_content", "args": {"page_id": "ページID"}}
+```bash
+animaworks-tool notion get-page-content PAGE_ID -j
 ```
 
 ### get_database — データベースメタデータ取得
-```json
-{"tool_name": "notion", "action": "get_database", "args": {"database_id": "データベースID"}}
+```bash
+animaworks-tool notion get-database DATABASE_ID -j
 ```
 
 ### query — データベースクエリ
-```json
-{"tool_name": "notion", "action": "query", "args": {"database_id": "データベースID", "filter": {}, "sorts": [], "page_size": 10}}
+```bash
+animaworks-tool notion query DATABASE_ID [--filter JSON] [--sorts JSON] [-n 10] -j
 ```
 - `filter`: Notion API フィルタ JSON（任意）
 - `sorts`: ソート条件の配列（任意）
 
 ### create_page — ページ作成
-```json
-{"tool_name": "notion", "action": "create_page", "args": {"parent_page_id": "親ページID", "properties": {"title": [{"text": {"content": "タイトル"}}]}}}
+```bash
+animaworks-tool notion create-page --parent-page-id ID --properties JSON -j
 ```
 - `parent_page_id` または `parent_database_id` のいずれかが必須
 - `children`: ページ本文ブロック配列（任意）
 
 ### update_page — ページ更新
-```json
-{"tool_name": "notion", "action": "update_page", "args": {"page_id": "ページID", "properties": {}}}
+```bash
+animaworks-tool notion update-page PAGE_ID --properties JSON -j
 ```
 
 ### create_database — データベース作成
-```json
-{"tool_name": "notion", "action": "create_database", "args": {"parent_page_id": "親ページID", "title": "DB名", "properties": {}}}
+```bash
+animaworks-tool notion create-database --parent-page-id ID --title "名前" --properties JSON -j
 ```
 
-## CLI使用法（Sモード）
+## CLI使用法
 
 ```bash
 animaworks-tool notion search [検索ワード] -j

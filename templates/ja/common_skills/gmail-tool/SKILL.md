@@ -12,34 +12,26 @@ GmailのメールをOAuth2で直接操作する外部ツール。
 
 ## 呼び出し方法
 
-**S-mode（推奨）**: Bash で `animaworks-tool gmail` を実行
-
-```bash
-animaworks-tool gmail unread [-n 20]
-animaworks-tool gmail read MESSAGE_ID
-animaworks-tool gmail draft --to ADDR --subject SUBJ --body BODY [--thread-id TID]
-```
-
-**A/B-mode**: `use_tool(tool_name="gmail", action="ACTION", args={...})` で構造化呼び出し
+**Bash**: `animaworks-tool gmail <サブコマンド> [引数]` で実行
 
 ## アクション一覧
 
 ### unread — 未読メール一覧
-```json
-{"tool_name": "gmail", "action": "unread", "args": {"max_results": 20}}
+```bash
+animaworks-tool gmail unread [-n 20]
 ```
 
 ### read_body — メール本文読み取り
-```json
-{"tool_name": "gmail", "action": "read_body", "args": {"message_id": "メッセージID"}}
+```bash
+animaworks-tool gmail read MESSAGE_ID
 ```
 
 ### draft — 下書き作成
-```json
-{"tool_name": "gmail", "action": "draft", "args": {"to": "宛先アドレス", "subject": "件名", "body": "本文", "thread_id": "スレッドID(任意)"}}
+```bash
+animaworks-tool gmail draft --to ADDR --subject SUBJ --body BODY [--thread-id TID]
 ```
 
-## CLI使用法（Sモード）
+## CLI使用法
 
 ```bash
 animaworks-tool gmail unread [-n 20]

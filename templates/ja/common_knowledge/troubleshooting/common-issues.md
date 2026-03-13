@@ -126,7 +126,7 @@ send_message(
    ```
 
 5. **ブロック中でも進められる作業がないか確認する**
-   - 永続タスクキュー（`list_tasks`）および `state/pending/` 配下のタスクに他の作業がないか確認する
+   - 永続タスクキュー（`Bash: animaworks-tool task list`）および `state/pending/` 配下のタスクに他の作業がないか確認する
    - ブロックされていない別のタスクに着手する
 
 ---
@@ -270,7 +270,7 @@ send_message(
 
 1. **スキルでツールの使い方を確認する**
    - `skill` ツールでスキル名を指定し、手順の全文を取得する。スキル一覧はツール説明の `<available_skills>` ブロックに表示される
-   - B-mode で外部ツールが許可されている場合、`use_tool` で構造化呼び出しが可能
+   - B-mode で外部ツールが許可されている場合、`Bash: animaworks-tool <ツール> <サブコマンド>` で呼び出しが可能
 
 2. **権限を確認する**
    ```
@@ -289,7 +289,7 @@ send_message(
    - 長時間ツール（画像生成、ローカルLLM等）は `animaworks-tool submit` で非同期実行
 
 5. **A-mode（LiteLLM）の場合**
-   - 外部ツールは `skill` で使い方を確認し、`execute_command` 経由で `animaworks-tool <ツール> <サブコマンド>` を実行する（A-mode の execute_command は Bash 相当）
+   - 外部ツールは `skill` で使い方を確認し、**Bash** 経由で `animaworks-tool <ツール> <サブコマンド>` を実行する
 
 6. **ツールがエラーを返す場合**
    - エラーメッセージを正確に記録する

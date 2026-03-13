@@ -253,7 +253,7 @@ Free-form notes for tasks not yet started or things to remember.
 
 ### state/task_queue.jsonl — Task Queue
 
-Structured task tracking. Operated via `backlog_task` / `update_task` / `list_tasks`.
+Structured task tracking. Operated via `submit_tasks` / `update_task`. List via `animaworks-tool task list` (CLI).
 Tasks with `source: human` MUST be processed with highest priority.
 
 ### state/pending/ — Execution Queue

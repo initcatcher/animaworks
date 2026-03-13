@@ -10,12 +10,12 @@
 以下のいずれかの手段で必ずアクション化する:
 - 部下に任せる → `delegate_task`
 - 自分で後でやる → `submit_tasks`（state/pending/ に書き出され TaskExec が別セッションで実行）
-- タスクキューに登録 → `backlog_task`
+- タスクキューに登録 → `submit_tasks`
 - 即座にフォローアップ → `send_message` / `call_human`
 
 ### チェック項目
 - バックグラウンドタスク結果: state/task_results/ に完了タスクがあれば内容を確認し、必要に応じてフォローアップ
-- **MUST**: 直近のチャット・Inboxで人間やAnimaから受けた指示がタスクキューに未登録であれば、`backlog_task` で登録する（source="human" を指定）
+- **MUST**: 直近のチャット・Inboxで人間やAnimaから受けた指示がタスクキューに未登録であれば、`submit_tasks` で登録する（source="human" 相当の情報をタスクに含める）
 - STALEタスク・期限間近タスク: 担当者にフォローアップ（send_message）、必要なら上司にエスカレーション
 - 長期待機中タスク（24h超）: 状況確認・リマインド
 - ブロッカーがある場合: 報告のみ行う（send_message / call_human）

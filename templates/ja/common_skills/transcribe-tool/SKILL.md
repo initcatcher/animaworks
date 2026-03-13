@@ -12,17 +12,11 @@ Whisper (faster-whisper) を使った音声文字起こしツール。
 
 ## 呼び出し方法
 
-**S-mode（推奨）**: Bash で `animaworks-tool transcribe transcribe` を実行
-
-```bash
-animaworks-tool transcribe transcribe audio_file.wav [-l ja] [-m large-v3-turbo]
-```
-
-**A/B-mode**: `use_tool(tool_name="transcribe", action="audio", args={...})` で構造化呼び出し
+**Bash**: `animaworks-tool transcribe transcribe <音声ファイル> [オプション]` で実行
 
 ### audio — 音声文字起こし
-```json
-{"tool_name": "transcribe", "action": "audio", "args": {"audio_path": "音声ファイルパス", "language": "ja"}}
+```bash
+animaworks-tool transcribe transcribe audio_file.wav [-l ja] [-m large-v3-turbo]
 ```
 
 ## パラメータ
@@ -34,7 +28,7 @@ animaworks-tool transcribe transcribe audio_file.wav [-l ja] [-m large-v3-turbo]
 | model | string | "large-v3-turbo" | Whisperモデル名 |
 | raw | boolean | false | true の場合、LLM後処理をスキップ |
 
-## CLI使用法（Sモード）
+## CLI使用法
 
 ```bash
 animaworks-tool transcribe transcribe audio_file.wav [-l ja] [-m large-v3-turbo]

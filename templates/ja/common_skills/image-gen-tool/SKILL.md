@@ -13,44 +13,36 @@ tags: [image, 3d, generation, external]
 
 ## 呼び出し方法
 
-**S-mode（推奨）**: Bash で `animaworks-tool image_gen` を実行
-
-```bash
-animaworks-tool image_gen pipeline "1girl, ..." --anima-dir $ANIMAWORKS_ANIMA_DIR
-animaworks-tool image_gen fullbody "1girl, standing, ..."
-# 長時間処理は animaworks-tool submit image_gen pipeline ... でバックグラウンド実行
-```
-
-**A/B-mode**: `use_tool(tool_name="image_gen", action="ACTION", args={...})` で構造化呼び出し
+**Bash**: `animaworks-tool image_gen <サブコマンド> [引数]` で実行。長時間処理は `animaworks-tool submit image_gen pipeline ...` でバックグラウンド実行。
 
 ## アクション一覧
 
 ### character_assets — パイプライン一括生成
-```json
-{"tool_name": "image_gen", "action": "character_assets", "args": {"prompt": "1girl, ...", "anima_dir": "$ANIMAWORKS_ANIMA_DIR"}}
+```bash
+animaworks-tool image_gen pipeline "1girl, ..." --anima-dir $ANIMAWORKS_ANIMA_DIR
 ```
 
 ### fullbody — 全身立ち絵
-```json
-{"tool_name": "image_gen", "action": "fullbody", "args": {"prompt": "1girl, standing, ...", "width": 832, "height": 1216}}
+```bash
+animaworks-tool image_gen fullbody "1girl, standing, ..."
 ```
 
 ### bustup — バストアップ
-```json
-{"tool_name": "image_gen", "action": "bustup", "args": {"reference": "元画像パス", "prompt": "追加プロンプト(任意)"}}
+```bash
+animaworks-tool image_gen bustup reference.png
 ```
 
 ### chibi — ちびキャラ
-```json
-{"tool_name": "image_gen", "action": "chibi", "args": {"reference": "元画像パス", "prompt": "追加プロンプト(任意)"}}
+```bash
+animaworks-tool image_gen chibi reference.png
 ```
 
 ### 3d_model — 3Dモデル生成
-```json
-{"tool_name": "image_gen", "action": "3d_model", "args": {"image": "画像パス"}}
+```bash
+animaworks-tool image_gen 3d image.png
 ```
 
-## CLI使用法（Sモード）
+## CLI使用法
 
 ```bash
 animaworks-tool image_gen pipeline "1girl, ..." --anima-dir $ANIMAWORKS_ANIMA_DIR
