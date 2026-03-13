@@ -919,6 +919,18 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
     "builder.procedure_label": {"ja": "手順", "en": "procedure"},
+    "builder.machine_hint": {
+        "ja": (
+            "\n\n**machine ツール**: コード変更・調査・分析など重い作業は"
+            " `animaworks-tool machine run` で外部エージェントに委託できます。"
+            " 詳細は `skill machine` で確認。"
+        ),
+        "en": (
+            "\n\n**machine tool**: For heavy tasks like code changes, investigation, "
+            "or analysis, delegate to an external agent via "
+            "`animaworks-tool machine run`. Run `skill machine` for details."
+        ),
+    },
     # ── handler.* (i18n) ──────────────────────────────
     "handler.bg_model_change_log": {
         "ja": "{target_name}のbackground_modelを{model}に変更",
@@ -2478,6 +2490,89 @@ _STRINGS: dict[str, dict[str, str]] = {
     "machine.list_hint": {
         "ja": "使用するエンジン名をengineパラメータに指定してmachine_runを再度呼び出してください。",
         "en": "Call machine_run again with the desired engine name in the engine parameter.",
+    },
+    # ── machine tool schema descriptions ──
+    "machine.schema.description_multi": {
+        "ja": (
+            "外部エージェントCLI（工作機械）にタスクを委託する。"
+            '推奨エンジン: {top}（他{others}エンジン利用可能。engine="__list__"で一覧取得）\n'
+            "工作機械は指示されたタスクのみを実行するステートレスな道具であり、"
+            "Animaの記憶・通信・組織情報にはアクセスできない。\n\n"
+            "【重要】instruction には以下を必ず含めること:\n"
+            "- 達成すべきゴールの具体的な記述\n"
+            "- 対象ファイル・モジュールの明示\n"
+            "- 制約条件（コーディング規約、既存APIとの整合性等）\n"
+            "- 期待する出力形式\n"
+            "曖昧な指示は低品質な結果につながる。職人が工作機械に渡す設計図のように、"
+            "正確かつ詳細に記述すること。"
+        ),
+        "en": (
+            "Delegate a task to an external agent CLI (machine tool). "
+            'Recommended engine: {top} ({others} more available; engine="__list__" to list all)\n'
+            "Machine tools are stateless and execute only the given instruction. "
+            "They have NO access to Anima memory, messaging, or org info.\n\n"
+            "[IMPORTANT] instruction MUST include:\n"
+            "- Clear goal description\n"
+            "- Target files / modules\n"
+            "- Constraints (coding conventions, API compatibility, etc.)\n"
+            "- Expected output format\n"
+            "Vague instructions lead to poor results. Write precise blueprints."
+        ),
+    },
+    "machine.schema.description_single": {
+        "ja": (
+            "外部エージェントCLI（工作機械）にタスクを委託する。"
+            "利用可能エンジン: {top}\n"
+            "工作機械は指示されたタスクのみを実行するステートレスな道具であり、"
+            "Animaの記憶・通信・組織情報にはアクセスできない。\n\n"
+            "【重要】instruction には以下を必ず含めること:\n"
+            "- 達成すべきゴールの具体的な記述\n"
+            "- 対象ファイル・モジュールの明示\n"
+            "- 制約条件（コーディング規約、既存APIとの整合性等）\n"
+            "- 期待する出力形式\n"
+            "曖昧な指示は低品質な結果につながる。職人が工作機械に渡す設計図のように、"
+            "正確かつ詳細に記述すること。"
+        ),
+        "en": (
+            "Delegate a task to an external agent CLI (machine tool). "
+            "Available engine: {top}\n"
+            "Machine tools are stateless and execute only the given instruction. "
+            "They have NO access to Anima memory, messaging, or org info.\n\n"
+            "[IMPORTANT] instruction MUST include:\n"
+            "- Clear goal description\n"
+            "- Target files / modules\n"
+            "- Constraints (coding conventions, API compatibility, etc.)\n"
+            "- Expected output format\n"
+            "Vague instructions lead to poor results. Write precise blueprints."
+        ),
+    },
+    "machine.schema.engine_multi": {
+        "ja": "使用する工作機械。推奨: {top}（「__list__」で全エンジン一覧取得）",
+        "en": 'Machine tool engine. Recommended: {top} (use "__list__" to list all)',
+    },
+    "machine.schema.engine_single": {
+        "ja": "使用する工作機械: {top}",
+        "en": "Machine tool engine: {top}",
+    },
+    "machine.schema.instruction": {
+        "ja": "工作機械への詳細な作業指示。ゴール・対象・制約・期待出力を明記する",
+        "en": "Detailed task instruction for the machine tool. Specify goal, target, constraints, and expected output",
+    },
+    "machine.schema.working_directory": {
+        "ja": "作業ディレクトリの絶対パス。工作機械はこのディレクトリ内でのみ書き込み可能",
+        "en": "Absolute path to the working directory. The machine tool can only write within this directory",
+    },
+    "machine.schema.background": {
+        "ja": "true: 非同期実行（結果は次回heartbeatで取得）。false: 同期実行（結果を直接返す）",
+        "en": "true: async execution (result at next heartbeat). false: sync execution (result returned directly)",
+    },
+    "machine.schema.model": {
+        "ja": "使用モデル（省略時はengineのデフォルト）",
+        "en": "Model to use (defaults to engine's default if omitted)",
+    },
+    "machine.schema.timeout": {
+        "ja": "タイムアウト秒数。同期時デフォルト600、非同期時デフォルト1800",
+        "en": "Timeout in seconds. Default 600 for sync, 1800 for async",
     },
 }
 

@@ -1024,6 +1024,8 @@ def build_system_prompt(
                     f"Use the `skill` tool to look up CLI usage, "
                     f"then execute via `execute_command`: `animaworks-tool <tool> <subcommand>`."
                 )
+            if "machine" in _ext_cats:
+                ext_tools += t("builder.machine_hint")
             _add(ext_tools, "external_tools", 2)
 
     # ── Group 5: 組織とコミュニケーション ─────────────────────

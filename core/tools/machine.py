@@ -436,24 +436,13 @@ def get_tool_schemas() -> list[dict[str, Any]]:
     others = len(available) - 1
 
     if others > 0:
-        engine_line = f'推奨エンジン: {top}（他{others}エンジン利用可能。engine="__list__"で一覧取得）\n'
-        engine_desc = f"使用する工作機械。推奨: {top}（「__list__」で全エンジン一覧取得）"
+        description = t(
+            "machine.schema.description_multi", top=top, others=others
+        )
+        engine_desc = t("machine.schema.engine_multi", top=top)
     else:
-        engine_line = f"利用可能エンジン: {top}\n"
-        engine_desc = f"使用する工作機械: {top}"
-
-    description = (
-        f"外部エージェントCLI（工作機械）にタスクを委託する。{engine_line}"
-        f"工作機械は指示されたタスクのみを実行するステートレスな道具であり、"
-        f"Animaの記憶・通信・組織情報にはアクセスできない。\n\n"
-        f"【重要】instruction には以下を必ず含めること:\n"
-        f"- 達成すべきゴールの具体的な記述\n"
-        f"- 対象ファイル・モジュールの明示\n"
-        f"- 制約条件（コーディング規約、既存APIとの整合性等）\n"
-        f"- 期待する出力形式\n"
-        f"曖昧な指示は低品質な結果につながる。職人が工作機械に渡す設計図のように、"
-        f"正確かつ詳細に記述すること。"
-    )
+        description = t("machine.schema.description_single", top=top)
+        engine_desc = t("machine.schema.engine_single", top=top)
 
     return [
         {
@@ -468,26 +457,24 @@ def get_tool_schemas() -> list[dict[str, Any]]:
                     },
                     "instruction": {
                         "type": "string",
-                        "description": "工作機械への詳細な作業指示。ゴール・対象・制約・期待出力を明記する",
+                        "description": t("machine.schema.instruction"),
                     },
                     "working_directory": {
                         "type": "string",
-                        "description": "作業ディレクトリの絶対パス。工作機械はこのディレクトリ内でのみ書き込み可能",
+                        "description": t("machine.schema.working_directory"),
                     },
                     "background": {
                         "type": "boolean",
-                        "description": (
-                            "true: 非同期実行（結果は次回heartbeatで取得）。false: 同期実行（結果を直接返す）"
-                        ),
+                        "description": t("machine.schema.background"),
                         "default": False,
                     },
                     "model": {
                         "type": "string",
-                        "description": "使用モデル（省略時はengineのデフォルト）",
+                        "description": t("machine.schema.model"),
                     },
                     "timeout": {
                         "type": "integer",
-                        "description": "タイムアウト秒数。同期時デフォルト600、非同期時デフォルト1800",
+                        "description": t("machine.schema.timeout"),
                     },
                 },
                 "required": ["engine", "instruction", "working_directory"],
