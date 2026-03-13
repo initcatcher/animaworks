@@ -157,6 +157,19 @@ _ENGINE_PERMISSION_FLAGS: dict[str, list[str]] = {
 
 _VALID_ENGINES = frozenset(_ENGINE_COMMANDS.keys())
 
+
+# ── Engine Availability ───────────────────────────────────
+
+
+def _get_available_engines() -> list[str]:
+    """Return engines whose CLI binary is found in PATH.
+
+    Called once at schema generation time (module import / tool discovery).
+    Changes to PATH require an Anima restart to take effect.
+    """
+    return [e for e in sorted(_VALID_ENGINES) if shutil.which(_ENGINE_COMMANDS[e][0])]
+
+
 # ── Rate Limiting ──────────────────────────────────────────
 
 _session_call_counts: dict[str, int] = {}
@@ -378,37 +391,50 @@ def _validate_working_directory(working_directory: str, anima_dir: str | None) -
 
 
 def get_tool_schemas() -> list[dict[str, Any]]:
-    """Return tool schemas for the machine tool."""
+    """Return tool schemas for the machine tool.
+
+    Dynamically probes PATH for available engine CLIs.  If no engines are
+    found, returns an empty list — the tool is effectively hidden from the
+    Anima.  Only engines whose binary is present appear in the ``enum``.
+    """
+    available = _get_available_engines()
+    if not available:
+        return []
+
+    engines_str = ", ".join(available)
+    description = (
+        f"外部エージェントCLI（工作機械）にタスクを委託する。"
+        f"利用可能エンジン: {engines_str}\n"
+        f"工作機械は指示されたタスクのみを実行するステートレスな道具であり、"
+        f"Animaの記憶・通信・組織情報にはアクセスできない。\n\n"
+        f"【重要】instruction には以下を必ず含めること:\n"
+        f"- 達成すべきゴールの具体的な記述\n"
+        f"- 対象ファイル・モジュールの明示\n"
+        f"- 制約条件（コーディング規約、既存APIとの整合性等）\n"
+        f"- 期待する出力形式\n"
+        f"曖昧な指示は低品質な結果につながる。職人が工作機械に渡す設計図のように、"
+        f"正確かつ詳細に記述すること。"
+    )
+
     return [
         {
             "name": "machine_run",
-            "description": (
-                "外部エージェントCLI（工作機械）にタスクを委託する。"
-                "工作機械は指示されたタスクのみを実行するステートレスな道具であり、"
-                "Animaの記憶・通信・組織情報にはアクセスできない。\n\n"
-                "【重要】instruction には以下を必ず含めること:\n"
-                "- 達成すべきゴールの具体的な記述\n"
-                "- 対象ファイル・モジュールの明示\n"
-                "- 制約条件（コーディング規約、既存APIとの整合性等）\n"
-                "- 期待する出力形式\n"
-                "曖昧な指示は低品質な結果につながる。職人が工作機械に渡す設計図のように、"
-                "正確かつ詳細に記述すること。"
-            ),
+            "description": description,
             "parameters": {
                 "type": "object",
                 "properties": {
                     "engine": {
                         "type": "string",
-                        "enum": sorted(_VALID_ENGINES),
-                        "description": "使用する工作機械（外部エージェントCLI）",
+                        "enum": available,
+                        "description": f"使用する工作機械（外部エージェントCLI）。利用可能: {engines_str}",
                     },
                     "instruction": {
                         "type": "string",
-                        "description": ("工作機械への詳細な作業指示。ゴール・対象・制約・期待出力を明記する"),
+                        "description": "工作機械への詳細な作業指示。ゴール・対象・制約・期待出力を明記する",
                     },
                     "working_directory": {
                         "type": "string",
-                        "description": ("作業ディレクトリの絶対パス。工作機械はこのディレクトリ内でのみ書き込み可能"),
+                        "description": "作業ディレクトリの絶対パス。工作機械はこのディレクトリ内でのみ書き込み可能",
                     },
                     "background": {
                         "type": "boolean",

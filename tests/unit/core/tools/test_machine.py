@@ -9,56 +9,127 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from core.tools.machine import (
-    EXECUTION_PROFILE,
     _MAX_CALLS_PER_HEARTBEAT,
     _MAX_CALLS_PER_SESSION,
     _VALID_ENGINES,
+    EXECUTION_PROFILE,
     _build_command,
     _build_env,
     _build_instruction,
+    _get_available_engines,
     _validate_working_directory,
     dispatch,
     get_tool_schemas,
     reset_call_counts,
 )
 
-
 # ── Schema Tests ──────────────────────────────────────────
 
 
 class TestToolSchemas:
+    """Schema tests — mock all engines as available for deterministic results."""
+
+    def _schemas_with_all_engines(self):
+        with patch("core.tools.machine.shutil.which", return_value="/usr/bin/fake"):
+            return get_tool_schemas()
+
     def test_get_tool_schemas_returns_list(self):
-        schemas = get_tool_schemas()
+        schemas = self._schemas_with_all_engines()
         assert isinstance(schemas, list)
         assert len(schemas) == 1
 
     def test_schema_name(self):
-        schema = get_tool_schemas()[0]
+        schema = self._schemas_with_all_engines()[0]
         assert schema["name"] == "machine_run"
 
     def test_schema_required_params(self):
-        schema = get_tool_schemas()[0]
+        schema = self._schemas_with_all_engines()[0]
         required = schema["parameters"]["required"]
         assert "engine" in required
         assert "instruction" in required
         assert "working_directory" in required
 
-    def test_schema_engine_enum(self):
-        schema = get_tool_schemas()[0]
+    def test_schema_engine_enum_matches_valid_engines(self):
+        schema = self._schemas_with_all_engines()[0]
         engine_enum = schema["parameters"]["properties"]["engine"]["enum"]
         assert set(engine_enum) == _VALID_ENGINES
 
     def test_schema_has_background_param(self):
-        schema = get_tool_schemas()[0]
+        schema = self._schemas_with_all_engines()[0]
         props = schema["parameters"]["properties"]
         assert "background" in props
         assert props["background"]["type"] == "boolean"
+
+    def test_schema_description_lists_engines(self):
+        schema = self._schemas_with_all_engines()[0]
+        for engine in _VALID_ENGINES:
+            assert engine in schema["description"]
+
+
+# ── Engine Availability Tests ─────────────────────────────
+
+
+class TestEngineAvailability:
+    """Dynamic engine availability probing via shutil.which."""
+
+    def test_all_engines_available(self):
+        with patch("core.tools.machine.shutil.which", return_value="/usr/bin/fake"):
+            available = _get_available_engines()
+            assert set(available) == _VALID_ENGINES
+
+    def test_no_engines_available(self):
+        with patch("core.tools.machine.shutil.which", return_value=None):
+            available = _get_available_engines()
+            assert available == []
+
+    def test_partial_engines_available(self):
+        def selective_which(name):
+            return "/usr/bin/fake" if name in ("claude", "cursor-agent") else None
+
+        with patch("core.tools.machine.shutil.which", side_effect=selective_which):
+            available = _get_available_engines()
+            assert set(available) == {"claude", "cursor-agent"}
+            assert available == sorted(available)
+
+    def test_schemas_empty_when_no_engines(self):
+        with patch("core.tools.machine.shutil.which", return_value=None):
+            schemas = get_tool_schemas()
+            assert schemas == []
+
+    def test_schemas_only_available_engines_in_enum(self):
+        def selective_which(name):
+            return "/usr/bin/fake" if name == "cursor-agent" else None
+
+        with patch("core.tools.machine.shutil.which", side_effect=selective_which):
+            schemas = get_tool_schemas()
+            assert len(schemas) == 1
+            engine_enum = schemas[0]["parameters"]["properties"]["engine"]["enum"]
+            assert engine_enum == ["cursor-agent"]
+
+    def test_schema_description_reflects_available_engines(self):
+        def selective_which(name):
+            return "/usr/bin/fake" if name in ("codex", "gemini") else None
+
+        with patch("core.tools.machine.shutil.which", side_effect=selective_which):
+            schemas = get_tool_schemas()
+            desc = schemas[0]["description"]
+            assert "codex" in desc
+            assert "gemini" in desc
+            assert "claude" not in desc.split("利用可能エンジン:")[1].split("\n")[0]
+
+    def test_engine_description_reflects_available(self):
+        def selective_which(name):
+            return "/usr/bin/fake" if name == "claude" else None
+
+        with patch("core.tools.machine.shutil.which", side_effect=selective_which):
+            schemas = get_tool_schemas()
+            engine_desc = schemas[0]["parameters"]["properties"]["engine"]["description"]
+            assert "claude" in engine_desc
 
 
 # ── Execution Profile Tests ───────────────────────────────
@@ -607,9 +678,8 @@ class TestCliMain:
     def test_run_failure_exits(self, tmp_path):
         from core.tools.machine import cli_main
 
-        with patch("core.tools.machine.shutil.which", return_value=None):
-            with pytest.raises(SystemExit):
-                cli_main(["run", "test", "-d", str(tmp_path)])
+        with patch("core.tools.machine.shutil.which", return_value=None), pytest.raises(SystemExit):
+            cli_main(["run", "test", "-d", str(tmp_path)])
 
 
 # ── Auto-Discovery Test ───────────────────────────────────
