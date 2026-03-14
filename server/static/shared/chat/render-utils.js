@@ -3,6 +3,27 @@
 // All functions are DOM-independent (return HTML strings) except bindToolCallHandlers.
 import { t } from "../i18n.js";
 
+// ── Think-tag strip (frontend safety net) ─────────────
+const _THINK_CLOSE_RE = /<\/think>\s*/;
+const _THINK_CLOSE_GLOBAL_RE = /<\/think>\s*/g;
+
+/**
+ * Strip `<think>...</think>` block from text (mirrors backend strip_thinking_tags).
+ * @param {string} text
+ * @returns {{ thinking: string, response: string }}
+ */
+export function stripThinkTags(text) {
+  if (!text) return { thinking: "", response: text || "" };
+  const idx = text.indexOf("</think>");
+  if (idx === -1) return { thinking: "", response: text };
+  let thinking = text.slice(0, idx);
+  const trimmed = thinking.trimStart();
+  if (trimmed.startsWith("<think>")) thinking = trimmed.slice("<think>".length);
+  const rest = text.slice(idx).replace(_THINK_CLOSE_RE, "");
+  const response = rest.replace(_THINK_CLOSE_GLOBAL_RE, "");
+  return { thinking, response };
+}
+
 // ── TextAnimator ──────────────────────────────────────
 // Buffers incoming text deltas and drips them at a constant rate
 // via requestAnimationFrame to smooth out bursty API token delivery.

@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 from core.exceptions import AnimaNotFoundError  # noqa: F401
 from core.exceptions import IPCConnectionError as IPCConnError
+from core.execution.base import strip_thinking_tags
 from core.i18n import t
 from core.schemas import ImageData
 from core.time_utils import now_local
@@ -314,11 +315,16 @@ def _handle_chunk(
         response_text = cycle_result.get("summary", "")
         # Extract emotion from response and include in done event
         clean_text, emotion = extract_emotion(response_text)
+        # Defensive strip: catch any residual <think> tags the streaming
+        # filter / safety net missed (e.g. across-chunk missing-<think>).
+        leaked, clean_text = strip_thinking_tags(clean_text)
+        thinking_raw = cycle_result.pop("thinking_text", "") or ""
+        if leaked and not thinking_raw:
+            thinking_raw = leaked
         cycle_result["summary"] = clean_text
         cycle_result["emotion"] = emotion
-        thinking_raw = cycle_result.pop("thinking_text", "") or ""
         cycle_result.pop("tool_call_records", None)
-        cycle_result["thinking_summary"] = thinking_raw[:500] if thinking_raw else None
+        cycle_result["thinking_summary"] = thinking_raw[:5000] if thinking_raw else None
         return _format_sse("done", cycle_result), clean_text
 
     if event_type == "error":
@@ -391,11 +397,14 @@ def _chunk_to_event(chunk: dict[str, Any]) -> tuple[str, dict[str, Any]] | None:
         cycle_result = chunk.get("cycle_result", {})
         response_text = cycle_result.get("summary", "")
         clean_text, emotion = extract_emotion(response_text)
+        leaked, clean_text = strip_thinking_tags(clean_text)
+        thinking_raw = cycle_result.pop("thinking_text", "") or ""
+        if leaked and not thinking_raw:
+            thinking_raw = leaked
         cycle_result["summary"] = clean_text
         cycle_result["emotion"] = emotion
-        thinking_raw = cycle_result.pop("thinking_text", "") or ""
         cycle_result.pop("tool_call_records", None)
-        cycle_result["thinking_summary"] = thinking_raw[:500] if thinking_raw else None
+        cycle_result["thinking_summary"] = thinking_raw[:5000] if thinking_raw else None
         return "done", cycle_result
     if event_type == "error":
         payload = {"message": chunk.get("message", "Unknown error")}

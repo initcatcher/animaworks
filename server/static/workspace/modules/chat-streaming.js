@@ -10,7 +10,7 @@ import { getDescendants } from "../../shared/chat/org-utils.js";
 import { setExpression, setTalking } from "./live2d.js";
 import { createLogger } from "../../shared/logger.js";
 import { renderConvMessages, renderOpts } from "./chat-history.js";
-import { renderStreamingBubbleInner, updateStreamingZone, TextAnimator } from "../../shared/chat/render-utils.js";
+import { renderStreamingBubbleInner, updateStreamingZone, TextAnimator, stripThinkTags } from "../../shared/chat/render-utils.js";
 import { renderWsThreadTabs } from "./chat-thread.js";
 import { wsSaveDraft, wsClearDraft, isMobileView } from "./chat-mobile.js";
 import { ChatSessionManager } from "../../shared/chat/session-manager.js";
@@ -291,7 +291,12 @@ async function _sendConversation(text, overrideImages = null) {
         if (_textAnimator) _textAnimator.flush();
         if (_thinkingAnimator) { _thinkingAnimator.flush(); _thinkingAnimator = null; }
         if (streamingMsg) {
-          if (summary) { streamingMsg.text = summary; }
+          let text = summary || streamingMsg.text || "";
+          const { thinking: strippedThinking, response: cleanResponse } = stripThinkTags(text);
+          streamingMsg.text = cleanResponse || streamingMsg.text || "";
+          if (strippedThinking && !streamingMsg.thinkingText) {
+            streamingMsg.thinkingText = strippedThinking;
+          }
           delete streamingMsg._displayText;
           delete streamingMsg._displayThinkingText;
           streamingMsg.images = di || [];
@@ -425,7 +430,12 @@ export async function resumeConversationStream(animaName) {
         if (_resumeAnimator) _resumeAnimator.flush();
         if (_resumeThinkingAnimator) { _resumeThinkingAnimator.flush(); _resumeThinkingAnimator = null; }
         if (streamingMsg) {
-          if (summary) streamingMsg.text = summary;
+          let text = summary || streamingMsg.text || "";
+          const { thinking: strippedThinking, response: cleanResponse } = stripThinkTags(text);
+          streamingMsg.text = cleanResponse || streamingMsg.text || "";
+          if (strippedThinking && !streamingMsg.thinkingText) {
+            streamingMsg.thinkingText = strippedThinking;
+          }
           delete streamingMsg._displayText;
           delete streamingMsg._displayThinkingText;
           streamingMsg.images = di || [];

@@ -7,8 +7,7 @@ from __future__ import annotations
 
 import json
 
-
-from server.routes.chat import _handle_chunk, _chunk_to_event
+from server.routes.chat import _chunk_to_event, _handle_chunk
 
 
 class TestDoneEventThinkingText:
@@ -35,30 +34,30 @@ class TestDoneEventThinkingText:
         chunk = self._make_cycle_done_chunk(thinking_text="secret thinking")
         sse_str, _ = _handle_chunk(chunk)
         assert sse_str is not None
-        data_line = [l for l in sse_str.split("\n") if l.startswith("data:")][0]
+        data_line = [line for line in sse_str.split("\n") if line.startswith("data:")][0]
         data = json.loads(data_line[len("data:"):])
         assert "thinking_text" not in data
         assert data.get("thinking_summary") == "secret thinking"
 
-    def test_thinking_summary_truncated_to_500(self):
-        long_thinking = "x" * 1000
+    def test_thinking_summary_truncated_to_5000(self):
+        long_thinking = "x" * 8000
         chunk = self._make_cycle_done_chunk(thinking_text=long_thinking)
         sse_str, _ = _handle_chunk(chunk)
-        data_line = [l for l in sse_str.split("\n") if l.startswith("data:")][0]
+        data_line = [line for line in sse_str.split("\n") if line.startswith("data:")][0]
         data = json.loads(data_line[len("data:"):])
-        assert len(data["thinking_summary"]) == 500
+        assert len(data["thinking_summary"]) == 5000
 
     def test_empty_thinking_text_gives_null_summary(self):
         chunk = self._make_cycle_done_chunk(thinking_text="")
         sse_str, _ = _handle_chunk(chunk)
-        data_line = [l for l in sse_str.split("\n") if l.startswith("data:")][0]
+        data_line = [line for line in sse_str.split("\n") if line.startswith("data:")][0]
         data = json.loads(data_line[len("data:"):])
         assert data["thinking_summary"] is None
 
     def test_tool_call_records_removed(self):
         chunk = self._make_cycle_done_chunk(thinking_text="think")
         sse_str, _ = _handle_chunk(chunk)
-        data_line = [l for l in sse_str.split("\n") if l.startswith("data:")][0]
+        data_line = [line for line in sse_str.split("\n") if line.startswith("data:")][0]
         data = json.loads(data_line[len("data:"):])
         assert "tool_call_records" not in data
 
@@ -77,3 +76,56 @@ class TestDoneEventThinkingText:
         assert result is not None
         _, payload = result
         assert "tool_call_records" not in payload
+
+    # ── Defensive strip_thinking_tags in done event ──────
+
+    def test_handle_chunk_strips_leaked_think_tags_from_summary(self):
+        """If summary still contains <think>...</think>, strip and move to thinking_summary."""
+        chunk = self._make_cycle_done_chunk(
+            thinking_text="",
+            summary="<think>leaked reasoning</think>clean response",
+        )
+        sse_str, clean = _handle_chunk(chunk)
+        data_line = [line for line in sse_str.split("\n") if line.startswith("data:")][0]
+        data = json.loads(data_line[len("data:"):])
+        assert data["summary"] == "clean response"
+        assert "<think>" not in data["summary"]
+        assert data["thinking_summary"] == "leaked reasoning"
+        assert clean == "clean response"
+
+    def test_handle_chunk_strips_missing_open_tag_from_summary(self):
+        """vLLM pattern: </think> present but <think> absent in summary."""
+        chunk = self._make_cycle_done_chunk(
+            thinking_text="",
+            summary="reasoning content</think>\n\nactual response",
+        )
+        sse_str, clean = _handle_chunk(chunk)
+        data_line = [line for line in sse_str.split("\n") if line.startswith("data:")][0]
+        data = json.loads(data_line[len("data:"):])
+        assert data["summary"] == "actual response"
+        assert "</think>" not in data["summary"]
+        assert "reasoning content" in data["thinking_summary"]
+
+    def test_chunk_to_event_strips_leaked_think_tags(self):
+        """WebSocket path also strips leaked think tags from summary."""
+        chunk = self._make_cycle_done_chunk(
+            thinking_text="",
+            summary="<think>ws leaked</think>ws clean",
+        )
+        result = _chunk_to_event(chunk)
+        assert result is not None
+        _, payload = result
+        assert payload["summary"] == "ws clean"
+        assert payload["thinking_summary"] == "ws leaked"
+
+    def test_handle_chunk_preserves_existing_thinking_text(self):
+        """If thinking_text is already set, leaked tags don't overwrite it."""
+        chunk = self._make_cycle_done_chunk(
+            thinking_text="proper thinking from safety net",
+            summary="<think>leaked</think>response",
+        )
+        sse_str, _ = _handle_chunk(chunk)
+        data_line = [line for line in sse_str.split("\n") if line.startswith("data:")][0]
+        data = json.loads(data_line[len("data:"):])
+        assert data["summary"] == "response"
+        assert data["thinking_summary"] == "proper thinking from safety net"

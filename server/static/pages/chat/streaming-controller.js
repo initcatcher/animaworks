@@ -4,7 +4,7 @@ import {
   scheduleSaveChatUiState, CONSTANTS,
 } from "./ctx.js";
 import { getDescendants } from "../../shared/chat/org-utils.js";
-import { TextAnimator } from "../../shared/chat/render-utils.js";
+import { TextAnimator, stripThinkTags } from "../../shared/chat/render-utils.js";
 
 const SEND_BTN_ICONS = {
   send: `<svg class="chat-send-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19V5M5 12l7-7 7 7" /></svg>`,
@@ -507,8 +507,12 @@ export function createStreamingController(ctx) {
           if (_textAnimator) _textAnimator.flush();
           if (_thinkingAnimator) { _thinkingAnimator.flush(); _thinkingAnimator = null; }
           if (!streamingMsg) return;
-          const text = summary || streamingMsg.text;
-          streamingMsg.text = text || t("chat.empty_response");
+          let text = summary || streamingMsg.text || "";
+          const { thinking: strippedThinking, response: cleanResponse } = stripThinkTags(text);
+          streamingMsg.text = cleanResponse || t("chat.empty_response");
+          if (strippedThinking && !streamingMsg.thinkingText) {
+            streamingMsg.thinkingText = strippedThinking;
+          }
           delete streamingMsg._displayText;
           delete streamingMsg._displayThinkingText;
           streamingMsg.images = doneImages || [];
