@@ -37,6 +37,7 @@ class ResponseStream:
     response_id: str
     anima_name: str
     from_person: str = "human"
+    thread_id: str = "default"
     created_at: float = field(default_factory=time.time)
     events: list[SSEEvent] = field(default_factory=list)
     complete: bool = False
@@ -249,6 +250,7 @@ class StreamRegistry:
             response_id=response_id,
             anima_name=anima_name,
             from_person=from_person,
+            thread_id=thread_id,
         )
         self._streams[response_id] = stream
         if anima_name not in self._anima_active:
@@ -307,6 +309,16 @@ class StreamRegistry:
                 stream.event_count,
             )
         return stream
+
+    def count_active(self, anima_name: str) -> int:
+        """Return the number of active (non-complete) streams for an anima."""
+        threads = self._anima_active.get(anima_name, {})
+        count = 0
+        for rid in threads.values():
+            stream = self._streams.get(rid)
+            if stream and not stream.complete:
+                count += 1
+        return count
 
     def mark_complete(self, response_id: str, *, done: bool = True) -> None:
         """Mark a stream as complete."""

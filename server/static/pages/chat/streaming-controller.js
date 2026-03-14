@@ -280,7 +280,7 @@ export function createStreamingController(ctx) {
 
     ctx.controllers.activity.addLocalActivity("chat", name, `${t("chat.user_prefix")} ${message}`);
 
-    const isVisible = () => state.selectedAnima === name;
+    const isVisible = () => state.selectedAnima === name && state.selectedThreadId === tid;
 
     const finalizeStreamError = (streamingMsg, errorMsg, recoveredText = "") => {
       if (_textAnimator) _textAnimator.flush();
@@ -354,8 +354,9 @@ export function createStreamingController(ctx) {
     ]);
     const _descendants = getDescendants(name, state.animas || []);
     const _onSubordinateActivity = (e) => {
-      const { name: subName, event: evtType, tool_name: toolName, detail: toolDetail } = e.detail || {};
+      const { name: subName, event: evtType, tool_name: toolName, detail: toolDetail, thread_id: evtThreadId } = e.detail || {};
       if (!streamingMsg?.streaming || subName === name) return;
+      if (evtThreadId && evtThreadId !== tid) return;
       if (!_descendants.has(subName)) return;
       if (!_SUB_ACTIVITY_TYPES.has(evtType)) return;
       if (!streamingMsg.subordinateActivity) streamingMsg.subordinateActivity = {};
@@ -599,7 +600,7 @@ export function createStreamingController(ctx) {
 
     const smartScroll = () => !ctx.controllers.renderer.isUserDetached();
     const renderBubbleR = (msg, zone = "all") => {
-      if (state.selectedAnima === animaName) ctx.controllers.renderer.renderStreamingBubble(msg, zone);
+      if (state.selectedAnima === animaName && state.selectedThreadId === tid) ctx.controllers.renderer.renderStreamingBubble(msg, zone);
     };
 
     let _rafPendingR = false;
@@ -671,7 +672,7 @@ export function createStreamingController(ctx) {
         onError: ({ message: errorMsg }) => {
           if (_resumeAnimator) _resumeAnimator.flush();
           if (_resumeThinkingAnimator) { _resumeThinkingAnimator.flush(); _resumeThinkingAnimator = null; }
-          if (streamingMsg) { streamingMsg.text += `\n${t("chat.error_prefix")} ${errorMsg}`; delete streamingMsg._displayText; delete streamingMsg._displayThinkingText; streamingMsg.streaming = false; if (state.selectedAnima === animaName) ctx.controllers.renderer.renderChat(smartScroll()); }
+          if (streamingMsg) { streamingMsg.text += `\n${t("chat.error_prefix")} ${errorMsg}`; delete streamingMsg._displayText; delete streamingMsg._displayThinkingText; streamingMsg.streaming = false; if (state.selectedAnima === animaName && state.selectedThreadId === tid) ctx.controllers.renderer.renderChat(smartScroll()); }
         },
         onContextUpdate: (ctxData) => { updateContextRing(ctxData, animaName); },
         onDone: ({ summary, images, thinkingSummary, contextUsageRatio, inputTokens, contextWindow, contextThreshold }) => {
@@ -689,7 +690,7 @@ export function createStreamingController(ctx) {
             if (contextUsageRatio || contextWindow) {
               updateContextRing({ contextUsageRatio, inputTokens, contextWindow, threshold: contextThreshold }, animaName);
             }
-            if (state.selectedAnima === animaName) ctx.controllers.renderer.renderChat(smartScroll());
+            if (state.selectedAnima === animaName && state.selectedThreadId === tid) ctx.controllers.renderer.renderChat(smartScroll());
             ctx.controllers.renderer.markResponseComplete(animaName, tid);
           }
         },
@@ -703,7 +704,7 @@ export function createStreamingController(ctx) {
             delete streamingMsg._displayText;
             delete streamingMsg._displayThinkingText;
             if (!streamingMsg.text) streamingMsg.text = t("chat.empty_response");
-            if (state.selectedAnima === animaName) ctx.controllers.renderer.renderChat(smartScroll());
+            if (state.selectedAnima === animaName && state.selectedThreadId === tid) ctx.controllers.renderer.renderChat(smartScroll());
           }
           updateSendButton();
           ctx.controllers.anima.renderAnimaTabs();

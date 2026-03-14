@@ -412,6 +412,7 @@ async def _emit_ws_side_effects(
     chunk: dict[str, Any],
     ws_manager: Any,
     anima_name: str,
+    thread_id: str = "default",
 ) -> None:
     """Fire WebSocket side effects for an IPC chunk (no request dependency).
 
@@ -442,6 +443,7 @@ async def _emit_ws_side_effects(
             "event": event_type,
             "tool_name": chunk.get("tool_name", ""),
             "tool_id": chunk.get("tool_id", ""),
+            "thread_id": thread_id,
         }
         if event_type == "tool_detail":
             ws_payload["detail"] = chunk.get("detail", "")
@@ -476,7 +478,7 @@ async def _run_producer(
     _start = _time.monotonic()
 
     try:
-        await emit_direct(ws_manager, "anima.status", {"name": name, "status": "thinking"})
+        await emit_direct(ws_manager, "anima.status", {"name": name, "status": "thinking", "thread_id": body.thread_id})
 
         # Emit stream_start event
         stream.add_event("stream_start", {"response_id": stream.response_id})
@@ -552,7 +554,7 @@ async def _run_producer(
                         continue
 
                     # WebSocket side effects (no request dependency)
-                    await _emit_ws_side_effects(chunk_data, ws_manager, name)
+                    await _emit_ws_side_effects(chunk_data, ws_manager, name, body.thread_id)
 
                     # Convert to SSE event and buffer in registry
                     result = _chunk_to_event(chunk_data)
@@ -695,9 +697,11 @@ async def _run_producer(
             stream_done,
         )
         try:
-            await emit_direct(ws_manager, "anima.status", {"name": name, "status": "idle"})
+            remaining = registry.count_active(name)
+            status = "idle" if remaining == 0 else "streaming"
+            await emit_direct(ws_manager, "anima.status", {"name": name, "status": status, "thread_id": body.thread_id})
         except Exception:
-            logger.debug("[PRODUCER] failed to emit idle status during cleanup")
+            logger.debug("[PRODUCER] failed to emit status during cleanup")
 
 
 async def _sse_tail(

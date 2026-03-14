@@ -129,8 +129,10 @@ export function scheduleStreamingUpdate(msg, zone = "text") {
 export function updateStreamingBubble(msg, zone = "all") {
   const dom = _getDom();
   if (!dom.convMessages) return;
-  const bubbles = dom.convMessages.querySelectorAll(".chat-bubble.assistant.streaming");
-  const bubble = bubbles[bubbles.length - 1];
+  let bubble = null;
+  if (msg.streamId) {
+    bubble = dom.convMessages.querySelector(`.chat-bubble.assistant.streaming[data-stream-id="${CSS.escape(String(msg.streamId))}"]`);
+  }
   if (!bubble) return;
   updateStreamingZone(bubble, msg, renderOpts(), zone);
   if (zone !== "thinking") {
@@ -207,8 +209,9 @@ async function _sendConversation(text, overrideImages = null) {
   };
   const _descendants = getDescendants(anima, getState().animas || []);
   const _onSubordinateActivity = (e) => {
-    const { name: subName, event: evtType, tool_name: toolName, detail: toolDetail } = e.detail || {};
+    const { name: subName, event: evtType, tool_name: toolName, detail: toolDetail, thread_id: evtThreadId } = e.detail || {};
     if (!streamingMsg?.streaming || subName === anima) return;
+    if (evtThreadId && evtThreadId !== thread) return;
     if (!_descendants.has(subName)) return;
     if (!_SUB_ACTIVITY_TYPES.has(evtType)) return;
     if (!streamingMsg.subordinateActivity) streamingMsg.subordinateActivity = {};

@@ -619,6 +619,80 @@ class TestHandleResumeLastEventId:
         assert "last_event_id" in ChatRequest.model_fields
 
 
+class TestResponseStreamThreadId:
+    """Tests for ResponseStream.thread_id field."""
+
+    def test_default_thread_id(self):
+        stream = _make_stream()
+        assert stream.thread_id == "default"
+
+    def test_custom_thread_id(self):
+        stream = _make_stream(thread_id="thread-abc")
+        assert stream.thread_id == "thread-abc"
+
+
+class TestStreamRegistryRegisterThreadId:
+    """Tests for thread_id propagation through register()."""
+
+    def test_register_stores_thread_id(self):
+        registry = StreamRegistry()
+        stream = registry.register("alice", thread_id="t1")
+        assert stream.thread_id == "t1"
+
+    def test_register_default_thread_id(self):
+        registry = StreamRegistry()
+        stream = registry.register("alice")
+        assert stream.thread_id == "default"
+
+
+class TestStreamRegistryCountActive:
+    """Tests for StreamRegistry.count_active."""
+
+    def test_zero_when_no_streams(self):
+        registry = StreamRegistry()
+        assert registry.count_active("alice") == 0
+
+    def test_one_active_stream(self):
+        registry = StreamRegistry()
+        registry.register("alice", thread_id="t1")
+        assert registry.count_active("alice") == 1
+
+    def test_multiple_active_threads(self):
+        registry = StreamRegistry()
+        registry.register("alice", thread_id="t1")
+        registry.register("alice", thread_id="t2")
+        assert registry.count_active("alice") == 2
+
+    def test_decrements_after_mark_complete(self):
+        registry = StreamRegistry()
+        s1 = registry.register("alice", thread_id="t1")
+        registry.register("alice", thread_id="t2")
+        assert registry.count_active("alice") == 2
+
+        registry.mark_complete(s1.response_id)
+        assert registry.count_active("alice") == 1
+
+    def test_zero_after_all_complete(self):
+        registry = StreamRegistry()
+        s1 = registry.register("alice", thread_id="t1")
+        s2 = registry.register("alice", thread_id="t2")
+
+        registry.mark_complete(s1.response_id)
+        registry.mark_complete(s2.response_id)
+        assert registry.count_active("alice") == 0
+
+    def test_does_not_count_other_animas(self):
+        registry = StreamRegistry()
+        registry.register("alice", thread_id="t1")
+        registry.register("bob", thread_id="t1")
+        assert registry.count_active("alice") == 1
+        assert registry.count_active("bob") == 1
+
+    def test_unknown_anima_returns_zero(self):
+        registry = StreamRegistry()
+        assert registry.count_active("unknown") == 0
+
+
 async def _collect_sse(response) -> list[str]:
     """Collect all SSE frames from a StreamingResponse."""
     frames = []

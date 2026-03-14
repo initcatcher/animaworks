@@ -327,10 +327,6 @@ export function createChatRenderer(ctx) {
     if (msg.streamId) {
       bubble = messagesEl.querySelector(`.chat-bubble.assistant.streaming[data-stream-id="${CSS.escape(String(msg.streamId))}"]`);
     }
-    if (!bubble) {
-      const bubbles = messagesEl.querySelectorAll(".chat-bubble.assistant.streaming");
-      bubble = bubbles[bubbles.length - 1];
-    }
     if (!bubble) return;
 
     updateStreamingZone(bubble, msg, _renderOpts(), zone);
