@@ -22,6 +22,11 @@ from core.schemas import ImageData
 
 logger = logging.getLogger("animaworks.execution.litellm_loop")
 
+_COMPACT_MSG_TRUNCATE_CHARS = 2000
+_COMPACT_TOOL_ARGS_TRUNCATE_CHARS = 200
+_COMPACT_MIN_CONTEXT_WINDOW = 16_000
+_COMPACT_MAX_SUMMARY_TOKENS = 4096
+
 
 def _extract_tool_uses_from_messages(messages: list[dict]) -> list[dict]:
     """Extract tool_use info from LiteLLM-format messages."""
@@ -271,3 +276,115 @@ class ContextMixin:
             return None
 
         return llm_kwargs
+
+    async def _preflight_clamp_with_compaction(
+        self,
+        llm_kwargs: dict[str, Any],
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        litellm: types.ModuleType,
+    ) -> dict[str, Any] | None:
+        """Pre-flight with automatic compaction fallback.
+
+        Tries normal _preflight_clamp first. If it returns None (too large),
+        attempts LLM one-shot compaction and retries.
+        """
+        result = self._preflight_clamp(llm_kwargs, messages, tools, litellm)
+        if result is not None:
+            return result
+
+        # Try compaction
+        compacted = await self._try_compact_messages(messages, llm_kwargs, litellm)
+        if not compacted:
+            return None
+
+        # Retry preflight after compaction
+        return self._preflight_clamp(llm_kwargs, messages, tools, litellm)
+
+    async def _try_compact_messages(
+        self,
+        messages: list[dict[str, Any]],
+        llm_kwargs: dict[str, Any],
+        litellm: types.ModuleType,
+    ) -> bool:
+        """Compact conversation by asking the same model to summarize."""
+        if len(messages) <= 3:
+            return False
+
+        ctx_window = self._resolve_cw()
+        if ctx_window < _COMPACT_MIN_CONTEXT_WINDOW:
+            return False
+
+        # Format conversation history for summarization
+        history_parts: list[str] = []
+        for msg in messages[2:]:  # Skip system + original user
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+            if role == "assistant" and msg.get("tool_calls"):
+                calls = msg["tool_calls"]
+                call_summaries = []
+                for tc in calls:
+                    fn = tc.get("function", {})
+                    call_summaries.append(
+                        f"  Tool: {fn.get('name', '?')}({fn.get('arguments', '')[:_COMPACT_TOOL_ARGS_TRUNCATE_CHARS]})"
+                    )
+                history_parts.append("[Assistant tool calls]\n" + "\n".join(call_summaries))
+            elif role == "tool":
+                content_str = content if isinstance(content, str) else str(content)
+                truncated = content_str[:_COMPACT_MSG_TRUNCATE_CHARS]
+                history_parts.append(f"[Tool result] {truncated}")
+            elif content:
+                content_str = content if isinstance(content, str) else str(content)
+                history_parts.append(f"[{role}] {content_str[:_COMPACT_MSG_TRUNCATE_CHARS]}")
+
+        history_text = "\n\n".join(history_parts)
+
+        from core.i18n import t
+
+        compact_system = t("litellm_context.compact_system")
+
+        compact_prompt = [
+            {"role": "system", "content": compact_system},
+            {"role": "user", "content": history_text},
+        ]
+
+        compact_kwargs = {k: v for k, v in llm_kwargs.items() if k not in ("max_tokens",)}
+        compact_kwargs["max_tokens"] = min(_COMPACT_MAX_SUMMARY_TOKENS, ctx_window // 4)
+        # Remove thinking-related params for compaction (avoid overhead)
+        for key in ["thinking", "think", "reasoning_effort", "enable_thinking", "reasoning_config"]:
+            compact_kwargs.pop(key, None)
+        if "extra_body" in compact_kwargs:
+            eb = dict(compact_kwargs["extra_body"])
+            for key in ("enable_thinking", "chat_template_kwargs"):
+                eb.pop(key, None)
+            if not eb:
+                del compact_kwargs["extra_body"]
+            else:
+                compact_kwargs["extra_body"] = eb
+
+        try:
+            response = await litellm.acompletion(messages=compact_prompt, **compact_kwargs)
+            summary = response.choices[0].message.content or ""
+        except Exception:
+            logger.warning("Compaction LLM call failed", exc_info=True)
+            return False
+
+        if not summary.strip():
+            return False
+
+        # Log compaction
+        old_count = len(messages) - 2
+        logger.info(
+            "Compacted %d messages into summary (%d chars)",
+            old_count,
+            len(summary),
+        )
+
+        # Reset messages: keep system + original user, replace rest with summary
+        messages[2:] = [
+            {
+                "role": "user",
+                "content": t("litellm_context.compact_summary_prefix") + "\n" + summary,
+            }
+        ]
+        return True
