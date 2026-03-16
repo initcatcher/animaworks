@@ -53,6 +53,7 @@ def _make_handler(tmp_path: Path, anima_name: str = "test_anima"):
     handler._state_file_lock = None
     handler._session_id = uuid.uuid4().hex[:12]
     handler._process_supervisor = None
+    handler._read_paths: set[str] = set()
 
     from core.memory.activity import ActivityLogger
 
