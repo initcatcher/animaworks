@@ -144,7 +144,7 @@ class PrimingEngine:
 
     def _get_or_create_retriever(self):
         """Get or create a retriever instance from the RetrieverCache."""
-        if self._retriever_initialized and self._retriever is not None:
+        if self._retriever is not None:
             return self._retriever
         return self._retriever_cache.get_or_create(self.anima_dir, self.knowledge_dir)
 
