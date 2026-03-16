@@ -126,7 +126,7 @@ animaworks/
 │   └── tools/                 # 外部ツール実装
 │       ├── web_search.py, x_search.py, slack.py
 │       ├── chatwork.py, gmail.py, github.py
-│       ├── google_calendar.py, google_tasks.py call_human.py
+│       ├── google_calendar.py, google_tasks.py, call_human.py
 │       ├── transcribe.py, aws_collector.py
 │       ├── image_gen.py       #   画像・3Dモデル生成
 │       └── local_llm.py

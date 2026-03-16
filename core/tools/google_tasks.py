@@ -389,7 +389,7 @@ def cli_main(argv: list[str] | None = None) -> None:
                 tasklist_id=args.tasklist_id,
                 title=args.title,
                 notes=getattr(args, "notes", "") or "",
-                due=getattr(args, "due") or None,
+                due=args.due or None,
             )
             if getattr(args, "json", False):
                 print(json.dumps(out, ensure_ascii=False, indent=2))

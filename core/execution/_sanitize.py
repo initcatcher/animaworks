@@ -124,6 +124,8 @@ TOOL_TRUST_LEVELS: dict[str, str] = {
     "google_tasks_list_tasks": "untrusted",
     "google_tasks_insert_task": "untrusted",
     "google_tasks_insert_tasklist": "untrusted",
+    "google_tasks_update_task": "untrusted",
+    "google_tasks_update_tasklist": "untrusted",
     "local_llm": "untrusted",
 }
 
