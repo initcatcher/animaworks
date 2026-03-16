@@ -609,7 +609,11 @@ def _ensure_runtime_only_dirs(data_dir: Path) -> None:
             "# Lines starting with # are comments\n"
             "\n"
             "# Index/TOC files (already referenced in system prompt)\n"
-            "00_index.md\n",
+            "00_index.md\n"
+            "\n"
+            "# Archived memory files\n"
+            "*/.archive/*\n"
+            "*/_archived/*\n",
             encoding="utf-8",
         )
     inbox_dir = data_dir / "shared" / "inbox"

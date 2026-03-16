@@ -487,6 +487,18 @@ class ConsolidationEngine:
         text = re.sub(r"\n```\s*$", "", text, flags=re.MULTILINE)
         return text.strip()
 
+    @staticmethod
+    def _is_archive_dir(rel: Path) -> bool:
+        """Check if a path is inside an archive subdirectory.
+
+        Handles all known archive directory naming conventions:
+        ``archive/``, ``_archived/``, ``.archive/``.
+        """
+        if not rel.parts:
+            return False
+        first = rel.parts[0].lower().lstrip("_").lstrip(".")
+        return first == "archive" or first == "archived"
+
     def _list_knowledge_files(self) -> list[str]:
         """List all existing knowledge files.
 
@@ -519,9 +531,8 @@ class ConsolidationEngine:
 
         results: list[dict[str, Any]] = []
         for path in sorted(self.knowledge_dir.rglob("*.md")):
-            # Skip archive subdirectories
             rel = path.relative_to(self.knowledge_dir)
-            if rel.parts and rel.parts[0] == "archive":
+            if self._is_archive_dir(rel):
                 continue
 
             meta_fields: dict[str, Any] = {"path": str(rel)}
@@ -578,7 +589,7 @@ class ConsolidationEngine:
         file_contents: dict[str, str] = {}
         for path in sorted(self.knowledge_dir.rglob("*.md")):
             rel = path.relative_to(self.knowledge_dir)
-            if rel.parts and rel.parts[0] == "archive":
+            if self._is_archive_dir(rel):
                 continue
             try:
                 text = path.read_text(encoding="utf-8")
@@ -623,11 +634,10 @@ class ConsolidationEngine:
                 else:
                     match_rel = source_file
 
-                # Skip self-match and archived files
                 match_rel_path = Path(match_rel)
                 if match_rel == rel_path:
                     continue
-                if match_rel_path.parts and match_rel_path.parts[0] == "archive":
+                if self._is_archive_dir(match_rel_path):
                     continue
                 # Skip if the matched file isn't in our content map
                 if match_rel not in file_contents:

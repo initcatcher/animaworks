@@ -46,6 +46,28 @@ class TestListKnowledgeFilesWithMeta:
         assert len(result) == 1
         assert result[0]["path"] == "active.md"
 
+    def test_skips_dot_archive(self, tmp_path: Path) -> None:
+        """Files in .archive/ (LLM Mode S convention) are excluded."""
+        engine = self._make_engine(tmp_path)
+        dot_archive = engine.knowledge_dir / ".archive"
+        dot_archive.mkdir()
+        (dot_archive / "tombstone.md").write_text("---\narchived: true\n---\nOld", encoding="utf-8")
+        (engine.knowledge_dir / "live.md").write_text("---\n---\nLive", encoding="utf-8")
+        result = engine._list_knowledge_files_with_meta()
+        assert len(result) == 1
+        assert result[0]["path"] == "live.md"
+
+    def test_skips_underscore_archived(self, tmp_path: Path) -> None:
+        """Files in _archived/ (legacy convention) are excluded."""
+        engine = self._make_engine(tmp_path)
+        archived_dir = engine.knowledge_dir / "_archived"
+        archived_dir.mkdir()
+        (archived_dir / "legacy.md").write_text("---\n---\nLegacy", encoding="utf-8")
+        (engine.knowledge_dir / "current.md").write_text("---\n---\nCurrent", encoding="utf-8")
+        result = engine._list_knowledge_files_with_meta()
+        assert len(result) == 1
+        assert result[0]["path"] == "current.md"
+
     def test_handles_no_frontmatter(self, tmp_path: Path) -> None:
         engine = self._make_engine(tmp_path)
         (engine.knowledge_dir / "plain.md").write_text("No frontmatter here", encoding="utf-8")
