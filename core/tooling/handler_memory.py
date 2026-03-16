@@ -129,8 +129,7 @@ class MemoryToolsMixin:
                     )
         if path.exists() and path.is_file():
             logger.debug("read_memory_file path=%s", rel)
-            if hasattr(self, "_read_paths"):
-                self._read_paths.add(rel)
+            self._read_paths.add(rel)
             content = path.read_text(encoding="utf-8")
             lines = content.splitlines(keepends=True)
             MAX_LINES = 2000
@@ -211,7 +210,7 @@ class MemoryToolsMixin:
 
         # ── Read-before-write guard ──
         _rbw_skip = mode == "append" or not _was_existing or rel.startswith(("episodes/", "state/", "shortterm/"))
-        if not _rbw_skip and hasattr(self, "_read_paths") and rel not in self._read_paths:
+        if not _rbw_skip and rel not in self._read_paths:
             try:
                 _existing = path.read_text(encoding="utf-8")[:2000]
             except OSError:
