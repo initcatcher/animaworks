@@ -69,6 +69,10 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ja": "タスクをバックグラウンドで実行開始しました (task_id: {task_id})",
         "en": "Task started in background (task_id: {task_id})",
     },
+    "handler.bg_cmd_started": {
+        "ja": "コマンドをバックグラウンドで実行開始しました。進捗は出力ファイルをReadで確認できます。",
+        "en": "Command started in background. Read the output file to check progress.",
+    },
     "handler.bg_task_id_required": {"ja": "Error: task_id は必須です", "en": "Error: task_id is required"},
     "handler.bg_not_enabled": {
         "ja": "Error: バックグラウンドタスク機能が無効です",
@@ -103,6 +107,14 @@ _STRINGS: dict[str, dict[str, str]] = {
     "handler.procedure_format_validation": {
         "ja": "⚠️ 手順書フォーマット検証:\n{msg}",
         "en": "⚠️ Procedure format validation:\n{msg}",
+    },
+    "handler.read_before_write": {
+        "ja": "Error: 既存ファイル {path} を上書きする前に read_memory_file で読み取ってください。\n\n既存内容のプレビュー:\n{existing}",
+        "en": "Error: Read {path} with read_memory_file before overwriting.\n\nExisting content preview:\n{existing}",
+    },
+    "handler.similar_knowledge_hint": {
+        "ja": "類似する既存の知識ファイル（トークン重複）:\n{files}",
+        "en": "Similar existing knowledge files (token overlap):\n{files}",
     },
     "handler.delegation_intent_deprecated": {
         "ja": "Error: intent='delegation' は廃止されました。タスクを委任するには delegate_task ツールを使用してください。send_message は report / question のみ対応しています。",
@@ -929,6 +941,34 @@ _STRINGS: dict[str, dict[str, str]] = {
             "\n\n**machine tool**: For heavy tasks like code changes, investigation, "
             "or analysis, delegate to an external agent via "
             "`animaworks-tool machine run`. Run `skill machine-tool` for details."
+        ),
+    },
+    "builder.default_workspace": {
+        "ja": "あなたのデフォルトワークスペース: {path} ({alias})",
+        "en": "Your default workspace: {path} ({alias})",
+    },
+    "builder.default_workspace_unresolved": {
+        "ja": "あなたのデフォルトワークスペース: (未解決: {alias})",
+        "en": "Your default workspace: (unresolved: {alias})",
+    },
+    "builder.injection_size_warning": {
+        "ja": (
+            "⚠️ あなたの injection.md が {size} 文字に肥大化しています（推奨上限: {threshold} 文字）。\n"
+            "都度指示や学習した知識を knowledge/ に移してください:\n"
+            '1. read_memory_file(path="injection.md") で内容を確認\n'
+            "2. 「役割定義」「絶対遵守ルール」以外の記述を knowledge/ に移動\n"
+            "   - 重要なルールは [IMPORTANT] タグを付けて knowledge/ に書く（常時想起されます）\n"
+            "   - 手順的な内容は procedures/ に移動\n"
+            "3. 移動完了後、injection.md を上書きして整理する"
+        ),
+        "en": (
+            "⚠️ Your injection.md has grown to {size} characters (recommended limit: {threshold}).\n"
+            "Move ad-hoc directives and learned knowledge to knowledge/:\n"
+            '1. read_memory_file(path="injection.md") to review contents\n'
+            "2. Move non-core content (not role definition or absolute rules) to knowledge/\n"
+            "   - Tag important rules with [IMPORTANT] in knowledge/ (they will be always-primed)\n"
+            "   - Move procedural content to procedures/\n"
+            "3. Overwrite injection.md with the cleaned-up version"
         ),
     },
     # ── handler.* (i18n) ──────────────────────────────

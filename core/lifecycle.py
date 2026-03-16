@@ -197,6 +197,18 @@ class LifecycleManager:
         # Fixed offset: crc32(anima_name) % 10 → deterministic 0-9 min spread
         offset = zlib.crc32(anima.name.encode()) % 10
 
+        # Snap to nearest divisor of 60 so cross-hour gaps stay uniform
+        _DIVISORS_OF_60 = [5, 6, 10, 12, 15, 20, 30, 60]
+        if interval > 0 and 60 % interval != 0:
+            snapped = min(_DIVISORS_OF_60, key=lambda d: abs(d - interval))
+            logger.info(
+                "Heartbeat '%s': interval %d not a divisor of 60, snapped to %d",
+                anima.name,
+                interval,
+                snapped,
+            )
+            interval = snapped
+
         # Build minute spec: base slots + offset
         slots = []
         m = offset
