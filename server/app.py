@@ -320,9 +320,7 @@ async def lifespan(app: FastAPI):
 
         _embed_config = load_config()
         _server_port = getattr(_embed_config.server, "port", 18500)
-        os.environ["ANIMAWORKS_EMBED_URL"] = (
-            f"http://127.0.0.1:{_server_port}/api/internal/embed"
-        )
+        os.environ["ANIMAWORKS_EMBED_URL"] = f"http://127.0.0.1:{_server_port}/api/internal/embed"
 
         # ── Start anima processes in background (parallel) ──
         # Web server is already accepting requests at this point.
