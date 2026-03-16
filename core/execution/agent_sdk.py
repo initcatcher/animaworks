@@ -221,6 +221,10 @@ class AgentSDKExecutor(BaseExecutor):
     def supports_streaming(self) -> bool:  # noqa: D102
         return True
 
+    @property
+    def _extra_mcp_servers(self) -> dict[str, dict]:
+        return self._model_config.extra_mcp_servers or {}
+
     def _resolve_agent_sdk_model(self) -> str:
         """Return the model name suitable for Agent SDK (strip provider prefix)."""
         import re
@@ -310,19 +314,6 @@ class AgentSDKExecutor(BaseExecutor):
         if self._model_config.api_base_url:
             env["ANTHROPIC_BASE_URL"] = self._model_config.api_base_url
         return env
-
-    def _build_extra_mcp_servers(self) -> dict[str, dict]:
-        try:
-            from core.config.models import load_config
-
-            config = load_config()
-            anima_name = self._anima_dir.name
-            anima_config = config.animas.get(anima_name)
-            if anima_config is None:
-                return {}
-            return dict(anima_config.extra_mcp_servers)
-        except Exception:
-            return {}
 
     def _build_mcp_env(self) -> dict[str, str]:
         """Build env dict for the MCP server subprocess.
@@ -437,8 +428,8 @@ class AgentSDKExecutor(BaseExecutor):
         ]
         _allowed_tools.extend(["Task", "Agent"])
 
-        # extra_mcp_servers で追加したサーバーのツールも自動的に許可リストに追加
-        for server_name in self._build_extra_mcp_servers():
+        # extra_mcp_servers で追加したサーバーの MCP ツールも許可リストに追加
+        for server_name in self._extra_mcp_servers:
             _allowed_tools.append(f"mcp__{server_name}__*")
 
         kwargs: dict[str, Any] = dict(
@@ -459,7 +450,7 @@ class AgentSDKExecutor(BaseExecutor):
                     "args": ["-m", "core.mcp.server"],
                     "env": self._build_mcp_env(),
                 },
-                **self._build_extra_mcp_servers(),
+                **self._extra_mcp_servers,
             },
             hooks={
                 "PreToolUse": [

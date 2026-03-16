@@ -74,7 +74,6 @@ class AnimaModelConfig(BaseModel):
     supervisor: str | None = None
     speciality: str | None = None
     model: str | None = None
-    extra_mcp_servers: dict[str, dict] = Field(default_factory=dict)
 
 
 # ── Default model names (single source of truth) ─────────────────────────────
@@ -706,6 +705,7 @@ def _load_status_json(anima_dir: Path) -> dict[str, Any]:
         "max_outbound_per_day": "max_outbound_per_day",
         "max_recipients_per_run": "max_recipients_per_run",
         "default_workspace": "default_workspace",
+        "extra_mcp_servers": "extra_mcp_servers",
     }
     # Fields where None is a valid explicit value (e.g. supervisor=null
     # means "top-level / no supervisor").  Empty string is still "not set".
@@ -764,12 +764,6 @@ def resolve_anima_config(
                 resolved[field_name] = anima_value
             else:
                 resolved[field_name] = getattr(defaults, field_name)
-        elif field_name == "extra_mcp_servers":
-            # Start from defaults (usually empty), then overlay per-anima config.
-            base: dict[str, Any] = dict(getattr(defaults, field_name))
-            if anima_entry.extra_mcp_servers:
-                base.update(anima_entry.extra_mcp_servers)
-            resolved[field_name] = base
         else:
             resolved[field_name] = getattr(defaults, field_name)
 
@@ -1074,6 +1068,7 @@ def load_model_config(anima_dir: Path) -> ModelConfig:
         llm_timeout=resolved.llm_timeout,
         extra_keys=credential.keys or {},
         mode_s_auth=resolved.mode_s_auth,
+        extra_mcp_servers=resolved.extra_mcp_servers,
     )
 
 
