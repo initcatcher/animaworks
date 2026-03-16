@@ -23,10 +23,10 @@ from core.config.models import (
     read_anima_supervisor,
     register_anima_in_config,
     resolve_anima_config,
+    resolve_context_window,
     resolve_execution_mode,
     save_config,
 )
-from core.config.models import resolve_context_window  # noqa: F811
 from core.config.vault import (
     VaultError,
     VaultManager,

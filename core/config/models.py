@@ -36,6 +36,8 @@ def resolve_context_window(model_name: str, *args: object, **kwargs: object) -> 
     from core.prompt.context import resolve_context_window as _rcw
 
     return _rcw(model_name, *args, **kwargs)  # type: ignore[arg-type]
+
+
 from core.config.model_mode import (
     _LEGACY_MODE_MAP,
     DEFAULT_MODEL_MODE_PATTERNS,
