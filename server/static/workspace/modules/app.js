@@ -135,7 +135,7 @@ function updateViewToggle() {
         replayBtn.textContent = "▶ Replay";
         replayBtn.classList.remove("ws-replay-btn--active");
       } else {
-        startReplay(12);
+        startReplay(24);
         replayBtn.textContent = "■ Live";
         replayBtn.classList.add("ws-replay-btn--active");
       }

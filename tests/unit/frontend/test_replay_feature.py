@@ -111,10 +111,10 @@ class TestReplayEngineStructure:
             "ReplayEngine must have flushLiveBuffer method"
         )
 
-    def test_speed_options_are_1_5_10_50_100(self):
-        assert "SPEED_OPTIONS = [1, 5, 10, 50, 100]" in self.src or (
-            "[1, 5, 10, 50, 100]" in self.src and "SPEED" in self.src
-        ), "Speed options must be [1, 5, 10, 50, 100]"
+    def test_speed_options_include_200(self):
+        assert "SPEED_OPTIONS = [1, 5, 10, 50, 100, 200]" in self.src or (
+            "[1, 5, 10, 50, 100, 200]" in self.src and "SPEED" in self.src
+        ), "Speed options must include 200x"
 
 
 # ── ReplayUI Structure ──────────────────────────────────────────

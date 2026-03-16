@@ -1258,7 +1258,7 @@ export function isReplayMode() {
  * Enter replay mode: load events and show replay controls.
  * @param {number} [hours=12]
  */
-export async function startReplay(hours = 12) {
+export async function startReplay(hours = 24) {
   if (_replayMode) return;
   _replayMode = true;
 

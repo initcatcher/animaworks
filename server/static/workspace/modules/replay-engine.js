@@ -12,7 +12,7 @@ const logger = createLogger("replay-engine");
 // ── Constants ───────────────────────────────────────────────────────────────
 
 const MAX_STREAM_ENTRIES = 4;
-const SPEED_OPTIONS = [1, 5, 10, 50, 100];
+const SPEED_OPTIONS = [1, 5, 10, 50, 100, 200];
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const MAX_LIVE_BUFFER = 1000;
 
@@ -139,7 +139,7 @@ export class ReplayEngine {
    */
   async load(hours = 12) {
     try {
-      const res = await fetch(`/api/activity/recent?hours=${hours}&limit=5000`);
+      const res = await fetch(`/api/activity/recent?hours=${hours}&limit=20000`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const raw = data.events || [];
@@ -235,13 +235,13 @@ export class ReplayEngine {
   }
 
   /**
-   * Set playback speed (1, 5, 10, 50, 100).
+   * Set playback speed (1, 5, 10, 50, 100, 200).
    * @param {number} speed
    */
   setSpeed(speed) {
     const v = Number(speed);
     if (SPEED_OPTIONS.includes(v)) this._speed = v;
-    else this._speed = Math.max(1, Math.min(100, Math.round(v)));
+    else this._speed = Math.max(1, Math.min(200, Math.round(v)));
   }
 
   /** @returns {number} */

@@ -11,7 +11,7 @@ const logger = createLogger("replay-ui");
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
-const SPEED_CYCLE = [1, 5, 10, 50, 100];
+const SPEED_CYCLE = [1, 5, 10, 50, 100, 200];
 const SKIP_MS = 5 * 60 * 1000; // 5 minutes
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -232,7 +232,7 @@ export class ReplayUI {
 
   /**
    * Update speed display.
-   * @param {number} speed - Current speed multiplier (1, 5, 10, 50, 100)
+   * @param {number} speed - Current speed multiplier (1, 5, 10, 50, 100, 200)
    */
   setSpeed(speed) {
     const idx = SPEED_CYCLE.indexOf(speed);
