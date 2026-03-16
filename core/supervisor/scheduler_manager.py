@@ -144,8 +144,11 @@ class SchedulerManager:
         else:
             log_active = "24h"
 
-        if interval <= 60:
-            # CronTrigger: build minute spec with offset
+        # CronTrigger minute-slot approach only works when interval divides
+        # evenly into 60; otherwise cross-hour gaps become shorter than the
+        # intended interval (e.g. interval=43 → slots "9,52" → 43min then
+        # 17min gap).  Fall through to polling for non-divisor intervals.
+        if interval <= 60 and 60 % interval == 0:
             hour_spec = (
                 f"{active_start}-{active_end - 1}" if active_start is not None and active_end is not None else "*"
             )
