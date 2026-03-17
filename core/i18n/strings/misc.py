@@ -492,6 +492,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "ja": "🔴 OVERDUE({time}期限)",
         "en": "🔴 OVERDUE(deadline {time})",
     },
+    "task_queue.overdue_aggregate": {
+        "ja": '🔴 OVERDUE集約（{count}件）: {summaries}\n  → list_tasks(status="pending") で詳細確認',
+        "en": '🔴 OVERDUE aggregate ({count}): {summaries}\n  → list_tasks(status="pending") for details',
+    },
     "voice.mode_suffix": {
         "ja": (
             "\n\n[voice-mode: 音声会話です。話し言葉で200文字以内で簡潔に回答してください。Markdown記法（見出し・太字・リスト・コードブロック等）は使わないでください]"

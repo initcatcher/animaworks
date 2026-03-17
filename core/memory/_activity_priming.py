@@ -75,6 +75,10 @@ class PrimingMixin:
         """Format a single entry as a concise timeline line."""
         ts = entry.ts[11:16] if len(entry.ts) >= 16 else entry.ts
 
+        if entry.type == "heartbeat_end":
+            reflection_line = PrimingMixin._format_heartbeat_reflection(entry, ts)
+            if reflection_line:
+                return reflection_line
         if entry.type == "tool_result":
             return PrimingMixin._format_tool_result_entry(entry, ts)
 
@@ -160,6 +164,26 @@ class PrimingMixin:
             err_hint = (entry.content or "")[:60]
             return f"[{ts}] TRES {tool} → fail: {err_hint}"
         return f"[{ts}] TRES {tool} → ok{detail}"
+
+    @staticmethod
+    def _format_heartbeat_reflection(entry: ActivityEntry, ts: str) -> str:
+        """Extract [REFLECTION] block from heartbeat_end and format compactly.
+
+        Output: ``[HH:MM] HB振り返り: <reflection text truncated to 100 chars>``
+        Returns empty string if no REFLECTION block found.
+        """
+        import re
+
+        text = entry.summary or entry.content or ""
+        match = re.search(r"\[REFLECTION\](.*?)\[/REFLECTION\]", text, re.DOTALL)
+        if not match:
+            return ""
+        reflection = match.group(1).strip().replace("\n", " ")
+        if not reflection:
+            return ""
+        if len(reflection) > 100:
+            reflection = reflection[:97] + "..."
+        return f"[{ts}] HB振り返り: {reflection}"
 
     # ── Grouping ─────────────────────────────────────────────
 
