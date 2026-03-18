@@ -6,7 +6,6 @@ from __future__ import annotations
 
 """Tests for the unified migration framework."""
 
-import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,7 +13,6 @@ import pytest
 
 from core.migrations.registry import MigrationReport, MigrationRunner, MigrationStep, StepResult
 from core.migrations.tracker import MigrationState, MigrationTracker
-
 
 # ── Tracker tests ───────────────────────────────────────────
 
@@ -221,9 +219,7 @@ class TestMigrationSteps:
         from core.migrations.steps import step_current_task_references
 
         anima = self._make_anima(data_dir, "carol")
-        (anima / "heartbeat.md").write_text(
-            "Check current_task.md for status\nReview current_task", encoding="utf-8"
-        )
+        (anima / "heartbeat.md").write_text("Check current_task.md for status\nReview current_task", encoding="utf-8")
         result = step_current_task_references(data_dir, dry_run=False, verbose=True)
         assert result.changed == 1
         content = (anima / "heartbeat.md").read_text(encoding="utf-8")
