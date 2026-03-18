@@ -7,6 +7,11 @@ adhering to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- unified `animaworks migrate` command — 22 migration steps across 5 categories (structural, per-anima, template sync, DB sync, version tracking) with `--dry-run`, `--list`, `--force`, `--resync-db` options
+- auto-migration on server startup via `ensure_runtime_dir()` — no manual action needed for most upgrades
+- `migration_state.json` for idempotent version tracking of applied migrations
+
 ## [0.5.4] - 2026-03-18
 
 ### Added

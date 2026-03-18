@@ -314,6 +314,7 @@ The CLI is for power users and automation. Day-to-day use is through the Web UI.
 |---------|-------------|
 | `animaworks init` | Initialize runtime directory (non-interactive) |
 | `animaworks init --force` | Merge template updates (preserves data) |
+| `animaworks migrate [--dry-run] [--list] [--force]` | Run runtime data migrations (auto-runs on startup) |
 | `animaworks reset [--restart]` | Reset runtime directory |
 
 ### Anima Management

@@ -314,6 +314,7 @@ CLI는 파워 유저와 자동화를 위한 기능입니다. 일상적인 사용
 |--------|------|
 | `animaworks init` | 런타임 디렉토리 초기화 (비대화형) |
 | `animaworks init --force` | 템플릿 차분 병합 (데이터 보존) |
+| `animaworks migrate [--dry-run] [--list] [--force]` | 런타임 데이터 마이그레이션 실행 (시작 시 자동 실행) |
 | `animaworks reset [--restart]` | 런타임 디렉토리 초기화 |
 
 ### Anima 관리
