@@ -38,7 +38,6 @@ def _update_state_from_summary(
     """
     from core.memory.task_queue import TaskQueueManager
 
-    anima_name = memory_mgr.anima_dir.name
     try:
         tqm = TaskQueueManager(memory_mgr.anima_dir)
     except Exception:
