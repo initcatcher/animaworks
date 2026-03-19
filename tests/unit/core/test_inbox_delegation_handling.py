@@ -13,9 +13,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 from core._anima_inbox import (
     _check_task_state,
@@ -26,7 +24,6 @@ from core._anima_inbox import (
 )
 from core.messenger import InboxItem
 from core.schemas import Message
-
 
 # ── Fixtures ──────────────────────────────────────────────
 
@@ -70,7 +67,6 @@ def _setup_anima_dir(tmp_path: Path) -> Path:
 
 
 class TestExtractTaskId:
-
     def test_extracts_from_meta(self) -> None:
         msg = _make_message(meta={"task_id": "abcdef012345"})
         assert _extract_task_id(msg) == "abcdef012345"
@@ -103,7 +99,6 @@ class TestExtractTaskId:
 
 
 class TestSplitDelegationItems:
-
     def test_separates_delegation_with_task_id(self, tmp_path: Path) -> None:
         delegation_msg = _make_message(
             intent="delegation",
@@ -150,7 +145,6 @@ class TestSplitDelegationItems:
 
 
 class TestCheckTaskState:
-
     def test_completed(self, tmp_path: Path) -> None:
         anima_dir = _setup_anima_dir(tmp_path)
         (anima_dir / "state" / "task_results" / "abc123def456.md").write_text("done")
@@ -213,7 +207,6 @@ class TestCheckTaskState:
 
 
 class TestRescueRegeneratePending:
-
     def test_creates_pending_file(self, tmp_path: Path) -> None:
         anima_dir = _setup_anima_dir(tmp_path)
         msg = _make_message(
@@ -259,7 +252,6 @@ class TestRescueRegeneratePending:
 
 
 class TestHandleDelegationDms:
-
     def _make_anima_mixin(self, tmp_path: Path) -> SimpleNamespace:
         anima_dir = _setup_anima_dir(tmp_path)
         shared_dir = tmp_path / "shared"
@@ -367,7 +359,6 @@ class TestHandleDelegationDms:
 
 
 class TestMessageMeta:
-
     def test_meta_serialization(self) -> None:
         msg = _make_message(meta={"task_id": "abc123def456", "extra": "data"})
         data = json.loads(msg.model_dump_json())
