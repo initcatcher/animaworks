@@ -75,8 +75,12 @@ def is_cursor_agent_available() -> bool:
 
 
 def _resolve_session_type(trigger: str) -> str:
-    """Map a trigger string to its session type for chatId isolation."""
-    if not trigger or trigger.startswith("chat"):
+    """Map a trigger string to its session type for chatId isolation.
+
+    ``message:*`` triggers (human chat) map to ``"chat"`` so that session
+    IDs are stored under ``shortterm/chat/`` alongside other chat artifacts.
+    """
+    if not trigger or trigger.startswith(("chat", "message")):
         return "chat"
     return trigger.split(":")[0]
 
