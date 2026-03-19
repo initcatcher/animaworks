@@ -2,7 +2,7 @@
 import { t } from "/shared/i18n.js";
 import { api } from "../../modules/api.js";
 import { escapeHtml, renderMarkdown, renderSafeMarkdown, timeStr, smartTimestamp } from "../../modules/state.js";
-import { streamChat, fetchActiveStream, fetchStreamProgress } from "../../shared/chat-stream.js";
+import { streamChat, streamMeetingChat, fetchActiveStream, fetchStreamProgress } from "../../shared/chat-stream.js";
 import { createLogger } from "../../shared/logger.js";
 import { createImageInput, initLightbox, renderChatImages } from "../../shared/image-input.js";
 import { initVoiceUI, updateVoiceUIAnima } from "../../modules/voice-ui.js";
@@ -28,7 +28,7 @@ export const CONSTANTS = Object.freeze({
 export function createChatContext() {
   const mgr = ChatSessionManager.getInstance();
   mgr.configure({
-    streamChat, fetchActiveStream, fetchStreamProgress,
+    streamChat, streamMeetingChat, fetchActiveStream, fetchStreamProgress,
     getUser: () => localStorage.getItem("animaworks_user") || "human",
     fetchHistory: async (animaName, limit, before, threadId) => {
       let url = `/api/animas/${encodeURIComponent(animaName)}/conversation/history?limit=${limit}`;
@@ -68,7 +68,7 @@ export function createChatContext() {
 
   const deps = {
     t, api, escapeHtml, renderMarkdown, renderSafeMarkdown, timeStr, smartTimestamp,
-    streamChat, fetchActiveStream, fetchStreamProgress,
+    streamChat, streamMeetingChat, fetchActiveStream, fetchStreamProgress,
     logger,
     createImageInput, initLightbox, renderChatImages,
     initVoiceUI, updateVoiceUIAnima,

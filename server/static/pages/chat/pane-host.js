@@ -56,6 +56,7 @@ function paneHtml() {
         </div>
       </div>
 
+      <div class="meeting-participant-panel" data-chat-id="meetingParticipantPanel" style="display:none"></div>
       <div class="thread-tabs" data-chat-id="chatThreadTabs">
         <button class="thread-tab active" data-thread="default">${t("thread.default_label")}</button>
         <button class="thread-tab-new" data-chat-id="chatNewThreadBtn" title="${t("thread.new")}">＋</button>
@@ -167,6 +168,7 @@ export function createPaneHost(rootContainer) {
     ctx.controllers.sidebar = createSidebarController(ctx);
     ctx.controllers.events = createEventsController(ctx);
     ctx.controllers.imageVoice = createImageVoiceController(ctx);
+    ctx.controllers.meeting = createMeetingController(ctx);
 
     const pane = { id, el: paneEl, ctx, intervals: [] };
     panes.push(pane);
@@ -176,6 +178,7 @@ export function createPaneHost(rootContainer) {
 
     ctx.controllers.sidebar.initRightPaneVisibility();
     ctx.controllers.events.bindPaneEvents();
+    ctx.controllers.meeting.init();
     ctx.controllers.anima.loadAnimas();
 
     const chatInterval = setInterval(

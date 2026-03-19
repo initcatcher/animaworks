@@ -71,6 +71,8 @@ export async function fetchStreamProgress(animaName, responseId) {
  * @param {function(): void} [callbacks.onThinkingEnd] - Thinking block ended
  * @param {function(): void} [callbacks.onReconnecting] - Reconnection attempt starting
  * @param {function(): void} [callbacks.onReconnected] - Reconnection successful
+ * @param {function({speaker: string, role: string}): void} [callbacks.onSpeakerStart] - Meeting speaker started
+ * @param {function({speaker: string}): void} [callbacks.onSpeakerEnd] - Meeting speaker ended
  * @returns {Promise<void>}
  * @throws {Error} On HTTP error (non-ok response) or network failure
  */
@@ -123,6 +125,48 @@ export async function streamChat(animaName, body, signal, callbacks) {
 
   const elapsed = ((performance.now() - start) / 1000).toFixed(1);
   logger.info(`[SSE-FE] streamChat COMPLETE anima=${animaName} elapsed=${elapsed}s responseId=${responseId}`);
+}
+
+/**
+ * SSE chat stream for meeting rooms.
+ * Same pattern as streamChat but uses /api/rooms/{roomId}/chat/stream.
+ *
+ * @param {string} roomId - Meeting room ID
+ * @param {string|FormData} body - Request body (JSON string or FormData)
+ * @param {AbortSignal|null} signal - Optional AbortSignal for cancellation
+ * @param {object} callbacks - Event callbacks (same as streamChat, including onSpeakerStart/onSpeakerEnd)
+ * @returns {Promise<void>}
+ */
+export async function streamMeetingChat(roomId, body, signal, callbacks) {
+  const url = `/api/rooms/${encodeURIComponent(roomId)}/chat/stream`;
+  const start = performance.now();
+  logger.info(`[SSE-FE] streamMeetingChat START roomId=${roomId} url=${url}`);
+
+  const headers = body instanceof FormData ? {} : { "Content-Type": "application/json" };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body,
+    ...(signal ? { signal } : {}),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    logger.error(`[SSE-FE] streamMeetingChat fetch FAILED status=${res.status} body=${text.slice(0, 200)}`);
+    throw new Error(`API ${res.status}: ${text}`);
+  }
+
+  try {
+    await _processStream(res, callbacks, () => {}, () => {}, signal);
+  } catch (err) {
+    const elapsed = ((performance.now() - start) / 1000).toFixed(1);
+    logger.info(`[SSE-FE] streamMeetingChat _processStream ERROR roomId=${roomId} err=${err.name}:${err.message} elapsed=${elapsed}s`);
+    throw err;
+  }
+
+  const elapsed = ((performance.now() - start) / 1000).toFixed(1);
+  logger.info(`[SSE-FE] streamMeetingChat COMPLETE roomId=${roomId} elapsed=${elapsed}s`);
 }
 
 /**
@@ -270,6 +314,14 @@ async function _processStream(res, callbacks, setResponseId, setLastEventId, sig
           case "thinking_end":
             logger.debug(`[SSE-FE] EVENT thinking_end id=${id}`);
             callbacks.onThinkingEnd?.();
+            break;
+
+          case "speaker_start":
+            callbacks.onSpeakerStart?.({ speaker: data.speaker || "", role: data.role || "participant" });
+            break;
+
+          case "speaker_end":
+            callbacks.onSpeakerEnd?.({ speaker: data.speaker || "" });
             break;
 
           default:

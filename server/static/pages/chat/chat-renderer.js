@@ -216,17 +216,18 @@ export function createChatRenderer(ctx) {
     const messagesEl = $("chatPageMessages");
     if (!messagesEl) return;
 
-    const name = state.selectedAnima;
-    const tid = state.selectedThreadId;
+    const isMeeting = state.meetingMode && state.meetingRoom;
+    const name = isMeeting ? "meeting" : state.selectedAnima;
+    const tid = isMeeting ? state.meetingRoom.room_id : state.selectedThreadId;
     const mgr = state.manager;
     const history = name ? mgr.getMessages(name, tid) : [];
     const hs = name ? mgr.getHistoryState(name, tid) : { sessions: [], hasMore: false, nextBefore: null, loading: false };
 
-    const currentAnima = state.animas.find(a => a.name === name);
+    const currentAnima = isMeeting ? null : state.animas.find(a => a.name === name);
     const animaStatus = currentAnima?.status;
 
-    if (animaStatus === "bootstrapping" || animaStatus === "starting" || animaStatus === "not_found"
-        || (animaStatus === "error" && currentAnima?._bootstrapFailed)) {
+    if (!isMeeting && (animaStatus === "bootstrapping" || animaStatus === "starting" || animaStatus === "not_found"
+        || (animaStatus === "error" && currentAnima?._bootstrapFailed))) {
       renderBootstrapProgress(messagesEl, currentAnima);
       return;
     }

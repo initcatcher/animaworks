@@ -428,6 +428,13 @@ def create_app(animas_dir: Path, shared_dir: Path) -> FastAPI:
     app.state.animas_dir = animas_dir
     app.state.shared_dir = shared_dir
     app.state.setup_complete = config.setup_complete
+
+    # Meeting room manager
+    from server.room_manager import RoomManager
+
+    room_manager = RoomManager(shared_dir / "meetings")
+    room_manager.load_all_rooms()
+    app.state.room_manager = room_manager
     app.state.stream_registry = StreamRegistry()
 
     # ── Global exception handler ────────────────────────────

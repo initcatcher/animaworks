@@ -222,6 +222,10 @@ export function renderHistoryMessage(msg, opts) {
   }
 
   if (msg.role === "assistant") {
+    const speakerName = msg.speaker || opts.animaName;
+    const speakerLabel = msg.speaker
+      ? `<div class="chat-speaker-label">${escapeHtml(msg.speaker)}</div>`
+      : "";
     const rawText = msg.content || "";
     const content = rawText ? renderMarkdown(rawText, opts.animaName) : "";
     const toolHtml = renderToolCalls(msg.tool_calls, { escapeHtml, truncateLen: truncLen });
@@ -235,8 +239,8 @@ export function renderHistoryMessage(msg, opts) {
       : "";
     const actionsHtml = _bubbleActionsHtml(rawText);
     const dataAttr = rawText ? ` data-raw-text="${_escapeAttr(rawText)}"` : "";
-    const bubble = `<div class="chat-bubble assistant"${dataAttr}>${actionsHtml}${toLabel}${thinkingHtml}${content}${imagesHtml}${toolHtml}${tsHtml}</div>`;
-    return _wrapRow("assistant", bubble, _renderAvatar(opts.animaName, avatarMap));
+    const bubble = `<div class="chat-bubble assistant"${dataAttr}>${actionsHtml}${speakerLabel}${toLabel}${thinkingHtml}${content}${imagesHtml}${toolHtml}${tsHtml}</div>`;
+    return _wrapRow("assistant", bubble, _renderAvatar(speakerName, avatarMap));
   }
 
   const isAnima = msg.from_person && msg.from_person !== "human";
@@ -247,7 +251,8 @@ export function renderHistoryMessage(msg, opts) {
   const contentHtml = isAnima
     ? renderMarkdown(userContent)
     : `<div class="chat-text">${escapeHtml(userContent)}</div>`;
-  const bubble = `<div class="chat-bubble user">${fromLabel}${contentHtml}${tsHtml}</div>`;
+  const bubbleWs = isAnima ? ' style="white-space:normal"' : "";
+  const bubble = `<div class="chat-bubble user"${bubbleWs}>${fromLabel}${contentHtml}${tsHtml}</div>`;
   const avatarHtml = _renderAvatar(isAnima ? msg.from_person : null, avatarMap);
   return _wrapRow("user", bubble, avatarHtml);
 }
@@ -428,7 +433,7 @@ export function renderCollapsibleSession(sessions, type, opts) {
     for (const msg of allMessages) {
       const content = msg.content || "";
       if (content) {
-        bodyHtml += `<div class="bg-session-message">${renderMarkdown(escapeHtml(content))}</div>`;
+        bodyHtml += `<div class="bg-session-message" style="white-space:normal">${renderMarkdown(escapeHtml(content))}</div>`;
       }
     }
   } else {
@@ -509,6 +514,11 @@ export function renderLiveBubble(msg, opts) {
   }
 
   // assistant
+  const speakerName = msg.speaker || opts.animaName;
+  const speakerLabel = msg.speaker
+    ? `<div class="chat-speaker-label">${escapeHtml(msg.speaker)}${msg.speakerRole === "chair" ? " 👑" : ""}</div>`
+    : "";
+
   const streamClass = msg.streaming ? " streaming" : "";
   const streamIdAttr = msg.streaming && msg.streamId
     ? ` data-stream-id="${escapeHtml(String(msg.streamId))}"`
@@ -546,8 +556,8 @@ export function renderLiveBubble(msg, opts) {
   const rawText = msg.text || "";
   const actionsHtml = msg.streaming ? "" : _bubbleActionsHtml(rawText);
   const dataRawAttr = rawText && !msg.streaming ? ` data-raw-text="${_escapeAttr(rawText)}"` : "";
-  const bubble = `<div class="chat-bubble assistant${streamClass}"${streamIdAttr}${dataRawAttr}>${actionsHtml}${content}${imagesHtml}${compressionHtml}${toolHtml}${thinkingHtml}${tsHtml}</div>`;
-  return _wrapRow("assistant", bubble, _renderAvatar(opts.animaName, avatarMap));
+  const bubble = `<div class="chat-bubble assistant${streamClass}"${streamIdAttr}${dataRawAttr}>${actionsHtml}${speakerLabel}${content}${imagesHtml}${compressionHtml}${toolHtml}${thinkingHtml}${tsHtml}</div>`;
+  return _wrapRow("assistant", bubble, _renderAvatar(speakerName, avatarMap));
 }
 
 /**
