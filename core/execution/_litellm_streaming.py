@@ -321,9 +321,18 @@ class StreamingMixin:
                             yield {"type": "tool_start", "tool_name": tc_name, "tool_id": tc_id}
                     finish_reason = response.choices[0].finish_reason
                     if hasattr(response, "usage") and response.usage:
+                        _u = response.usage
+                        _cr_ns = getattr(_u, "cache_read_input_tokens", 0) or 0
+                        _cw_ns = getattr(_u, "cache_creation_input_tokens", 0) or 0
+                        if not _cr_ns:
+                            _ptd_ns = getattr(_u, "prompt_tokens_details", None)
+                            if _ptd_ns:
+                                _cr_ns = getattr(_ptd_ns, "cached_tokens", 0) or 0
                         usage_data = {
-                            "input_tokens": response.usage.prompt_tokens or 0,
-                            "output_tokens": response.usage.completion_tokens or 0,
+                            "input_tokens": _u.prompt_tokens or 0,
+                            "output_tokens": _u.completion_tokens or 0,
+                            "cache_read_tokens": _cr_ns,
+                            "cache_write_tokens": _cw_ns,
                         }
                     _chunk_count = 0
 
@@ -340,9 +349,18 @@ class StreamingMixin:
                     choice = chunk.choices[0] if chunk.choices else None
                     if choice is None:
                         if hasattr(chunk, "usage") and chunk.usage:
+                            _u_ch = chunk.usage
+                            _cr_ch = getattr(_u_ch, "cache_read_input_tokens", 0) or 0
+                            _cw_ch = getattr(_u_ch, "cache_creation_input_tokens", 0) or 0
+                            if not _cr_ch:
+                                _ptd_ch = getattr(_u_ch, "prompt_tokens_details", None)
+                                if _ptd_ch:
+                                    _cr_ch = getattr(_ptd_ch, "cached_tokens", 0) or 0
                             usage_data = {
-                                "input_tokens": chunk.usage.prompt_tokens or 0,
-                                "output_tokens": chunk.usage.completion_tokens or 0,
+                                "input_tokens": _u_ch.prompt_tokens or 0,
+                                "output_tokens": _u_ch.completion_tokens or 0,
+                                "cache_read_tokens": _cr_ch,
+                                "cache_write_tokens": _cw_ch,
                             }
                         continue
 
@@ -405,9 +423,18 @@ class StreamingMixin:
                         finish_reason = choice.finish_reason
 
                     if hasattr(chunk, "usage") and chunk.usage:
+                        _u_ch2 = chunk.usage
+                        _cr_ch2 = getattr(_u_ch2, "cache_read_input_tokens", 0) or 0
+                        _cw_ch2 = getattr(_u_ch2, "cache_creation_input_tokens", 0) or 0
+                        if not _cr_ch2:
+                            _ptd_ch2 = getattr(_u_ch2, "prompt_tokens_details", None)
+                            if _ptd_ch2:
+                                _cr_ch2 = getattr(_ptd_ch2, "cached_tokens", 0) or 0
                         usage_data = {
-                            "input_tokens": chunk.usage.prompt_tokens or 0,
-                            "output_tokens": chunk.usage.completion_tokens or 0,
+                            "input_tokens": _u_ch2.prompt_tokens or 0,
+                            "output_tokens": _u_ch2.completion_tokens or 0,
+                            "cache_read_tokens": _cr_ch2,
+                            "cache_write_tokens": _cw_ch2,
                         }
 
                 if _reasoning_seen:
@@ -461,6 +488,8 @@ class StreamingMixin:
                     _usage_acc.output_tokens += (
                         usage_data.get("output_tokens", 0) or usage_data.get("completion_tokens", 0) or 0
                     )
+                    _usage_acc.cache_read_tokens += usage_data.get("cache_read_tokens", 0) or 0
+                    _usage_acc.cache_write_tokens += usage_data.get("cache_write_tokens", 0) or 0
                 if tracker and usage_data:
                     tracker.update_from_usage(usage_data)
                     yield {
@@ -771,6 +800,14 @@ class StreamingMixin:
                     _out_ol = response.usage.completion_tokens or 0
                     _usage_acc_ol.input_tokens += _inp_ol
                     _usage_acc_ol.output_tokens += _out_ol
+                    _cr_ol = getattr(response.usage, "cache_read_input_tokens", 0) or 0
+                    _cw_ol = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
+                    if not _cr_ol:
+                        _ptd_ol = getattr(response.usage, "prompt_tokens_details", None)
+                        if _ptd_ol:
+                            _cr_ol = getattr(_ptd_ol, "cached_tokens", 0) or 0
+                    _usage_acc_ol.cache_read_tokens += _cr_ol
+                    _usage_acc_ol.cache_write_tokens += _cw_ol
                     usage_dict = {"input_tokens": _inp_ol, "output_tokens": _out_ol}
                     if tracker:
                         tracker.update_from_usage(usage_dict)

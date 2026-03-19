@@ -218,6 +218,8 @@ class AgentSDKExecutor(SDKOptionsMixin, BaseExecutor):
                     u = message.usage
                     usage_acc.input_tokens = u.get("input_tokens", 0) or 0
                     usage_acc.output_tokens = u.get("output_tokens", 0) or 0
+                    usage_acc.cache_read_tokens = u.get("cache_read_input_tokens", 0) or 0
+                    usage_acc.cache_write_tokens = u.get("cache_creation_input_tokens", 0) or 0
             elif isinstance(message, AssistantMessage):
                 for block in message.content:
                     if isinstance(block, TextBlock):

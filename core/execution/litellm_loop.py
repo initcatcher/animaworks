@@ -220,6 +220,14 @@ class LiteLLMExecutor(
                 _out = response.usage.completion_tokens or 0
                 usage_acc.input_tokens += _inp
                 usage_acc.output_tokens += _out
+                _cr = getattr(response.usage, "cache_read_input_tokens", 0) or 0
+                _cw = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
+                if not _cr:
+                    _ptd = getattr(response.usage, "prompt_tokens_details", None)
+                    if _ptd:
+                        _cr = getattr(_ptd, "cached_tokens", 0) or 0
+                usage_acc.cache_read_tokens += _cr
+                usage_acc.cache_write_tokens += _cw
                 usage_dict = {"input_tokens": _inp, "output_tokens": _out}
                 if tracker:
                     tracker.update_from_usage(usage_dict)

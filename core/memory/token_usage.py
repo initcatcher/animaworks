@@ -25,10 +25,10 @@ logger = logging.getLogger("animaworks.token_usage")
 # Override via ~/.animaworks/pricing.json
 DEFAULT_PRICING: dict[str, dict[str, float]] = {
     "claude-opus-4-6": {
-        "input": 15.0,
-        "output": 75.0,
-        "cache_read": 1.50,
-        "cache_write": 18.75,
+        "input": 5.0,
+        "output": 25.0,
+        "cache_read": 0.50,
+        "cache_write": 6.25,
     },
     "claude-sonnet-4-6": {
         "input": 3.0,
@@ -49,10 +49,10 @@ DEFAULT_PRICING: dict[str, dict[str, float]] = {
         "cache_write": 18.75,
     },
     "claude-opus-4-5": {
-        "input": 15.0,
-        "output": 75.0,
-        "cache_read": 1.50,
-        "cache_write": 18.75,
+        "input": 5.0,
+        "output": 25.0,
+        "cache_read": 0.50,
+        "cache_write": 6.25,
     },
     "claude-sonnet-4-5": {
         "input": 3.0,
@@ -60,7 +60,13 @@ DEFAULT_PRICING: dict[str, dict[str, float]] = {
         "cache_read": 0.30,
         "cache_write": 3.75,
     },
-    "claude-haiku-4": {
+    "claude-haiku-4-5": {
+        "input": 1.0,
+        "output": 5.0,
+        "cache_read": 0.10,
+        "cache_write": 1.25,
+    },
+    "claude-haiku-3-5": {
         "input": 0.80,
         "output": 4.0,
         "cache_read": 0.08,
@@ -256,6 +262,8 @@ class TokenUsageLogger:
                 "total_sessions": 0,
                 "total_input_tokens": 0,
                 "total_output_tokens": 0,
+                "total_cache_read_tokens": 0,
+                "total_cache_write_tokens": 0,
                 "total_tokens": 0,
                 "total_estimated_cost_usd": 0.0,
                 "by_model": {},
@@ -265,6 +273,8 @@ class TokenUsageLogger:
 
         total_input = sum(e.get("input_tokens", 0) for e in entries)
         total_output = sum(e.get("output_tokens", 0) for e in entries)
+        total_cache_read = sum(e.get("cache_read_tokens", 0) for e in entries)
+        total_cache_write = sum(e.get("cache_write_tokens", 0) for e in entries)
         total_cost = sum(e.get("estimated_cost_usd", 0) for e in entries)
 
         by_model: dict[str, dict[str, Any]] = {}
@@ -279,13 +289,24 @@ class TokenUsageLogger:
             cost = e.get("estimated_cost_usd", 0)
             inp = e.get("input_tokens", 0)
             out = e.get("output_tokens", 0)
+            cache_r = e.get("cache_read_tokens", 0)
+            cache_w = e.get("cache_write_tokens", 0)
 
             for key, bucket in ((model, by_model), (trigger, by_trigger), (day, by_date)):
                 if key not in bucket:
-                    bucket[key] = {"sessions": 0, "input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0}
+                    bucket[key] = {
+                        "sessions": 0,
+                        "input_tokens": 0,
+                        "output_tokens": 0,
+                        "cache_read_tokens": 0,
+                        "cache_write_tokens": 0,
+                        "cost_usd": 0.0,
+                    }
                 bucket[key]["sessions"] += 1
                 bucket[key]["input_tokens"] += inp
                 bucket[key]["output_tokens"] += out
+                bucket[key]["cache_read_tokens"] += cache_r
+                bucket[key]["cache_write_tokens"] += cache_w
                 bucket[key]["cost_usd"] = round(bucket[key]["cost_usd"] + cost, 6)
 
         return {
@@ -293,6 +314,8 @@ class TokenUsageLogger:
             "total_sessions": len(entries),
             "total_input_tokens": total_input,
             "total_output_tokens": total_output,
+            "total_cache_read_tokens": total_cache_read,
+            "total_cache_write_tokens": total_cache_write,
             "total_tokens": total_input + total_output,
             "total_estimated_cost_usd": round(total_cost, 4),
             "by_model": by_model,

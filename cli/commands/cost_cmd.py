@@ -44,6 +44,8 @@ def cmd_cost(args: argparse.Namespace) -> None:
             grand_total_cost = 0.0
             grand_total_input = 0
             grand_total_output = 0
+            grand_total_cache_read = 0
+            grand_total_cache_write = 0
             grand_total_sessions = 0
 
             for ad in anima_dirs:
@@ -54,6 +56,8 @@ def cmd_cost(args: argparse.Namespace) -> None:
                 grand_total_cost += summary["total_estimated_cost_usd"]
                 grand_total_input += summary["total_input_tokens"]
                 grand_total_output += summary["total_output_tokens"]
+                grand_total_cache_read += summary.get("total_cache_read_tokens", 0)
+                grand_total_cache_write += summary.get("total_cache_write_tokens", 0)
                 grand_total_sessions += summary["total_sessions"]
                 _print_anima_summary(ad.name, summary)
 
@@ -62,6 +66,8 @@ def cmd_cost(args: argparse.Namespace) -> None:
                 print(
                     f"{'TOTAL':>20s}  {grand_total_sessions:>6d} sessions  "
                     f"in:{_fmt_tokens(grand_total_input):>10s}  "
+                    f"CacheR:{_fmt_tokens(grand_total_cache_read):>10s}  "
+                    f"CacheW:{_fmt_tokens(grand_total_cache_write):>10s}  "
                     f"out:{_fmt_tokens(grand_total_output):>10s}  "
                     f"${grand_total_cost:.4f}"
                 )
@@ -86,39 +92,54 @@ def _show_anima_cost(name: str, anima_dir: Path, days: int, json_output: bool) -
 
     by_model = summary.get("by_model", {})
     if by_model:
-        print(f"  {'Model':<35s} {'Sessions':>8s} {'Input':>10s} {'Output':>10s} {'Cost':>10s}")
-        print(f"  {'-' * 35} {'-' * 8} {'-' * 10} {'-' * 10} {'-' * 10}")
+        print(
+            f"  {'Model':<35s} {'Sessions':>8s} {'Input':>10s} {'CacheR':>10s} {'CacheW':>10s} "
+            f"{'Output':>10s} {'Cost':>10s}"
+        )
+        print(f"  {'-' * 35} {'-' * 8} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10}")
         for model, data in sorted(by_model.items()):
             print(
                 f"  {model:<35s} {data['sessions']:>8d} "
-                f"{_fmt_tokens(data['input_tokens']):>10s} "
-                f"{_fmt_tokens(data['output_tokens']):>10s} "
+                f"{_fmt_tokens(data.get('input_tokens', 0)):>10s} "
+                f"{_fmt_tokens(data.get('cache_read_tokens', 0)):>10s} "
+                f"{_fmt_tokens(data.get('cache_write_tokens', 0)):>10s} "
+                f"{_fmt_tokens(data.get('output_tokens', 0)):>10s} "
                 f"${data['cost_usd']:.4f}"
             )
         print()
 
     by_trigger = summary.get("by_trigger", {})
     if by_trigger:
-        print(f"  {'Trigger':<20s} {'Sessions':>8s} {'Input':>10s} {'Output':>10s} {'Cost':>10s}")
-        print(f"  {'-' * 20} {'-' * 8} {'-' * 10} {'-' * 10} {'-' * 10}")
+        print(
+            f"  {'Trigger':<20s} {'Sessions':>8s} {'Input':>10s} {'CacheR':>10s} {'CacheW':>10s} "
+            f"{'Output':>10s} {'Cost':>10s}"
+        )
+        print(f"  {'-' * 20} {'-' * 8} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10}")
         for trigger, data in sorted(by_trigger.items()):
             print(
                 f"  {trigger:<20s} {data['sessions']:>8d} "
-                f"{_fmt_tokens(data['input_tokens']):>10s} "
-                f"{_fmt_tokens(data['output_tokens']):>10s} "
+                f"{_fmt_tokens(data.get('input_tokens', 0)):>10s} "
+                f"{_fmt_tokens(data.get('cache_read_tokens', 0)):>10s} "
+                f"{_fmt_tokens(data.get('cache_write_tokens', 0)):>10s} "
+                f"{_fmt_tokens(data.get('output_tokens', 0)):>10s} "
                 f"${data['cost_usd']:.4f}"
             )
         print()
 
     by_date = summary.get("by_date", {})
     if by_date:
-        print(f"  {'Date':<12s} {'Sessions':>8s} {'Input':>10s} {'Output':>10s} {'Cost':>10s}")
-        print(f"  {'-' * 12} {'-' * 8} {'-' * 10} {'-' * 10} {'-' * 10}")
+        print(
+            f"  {'Date':<12s} {'Sessions':>8s} {'Input':>10s} {'CacheR':>10s} {'CacheW':>10s} "
+            f"{'Output':>10s} {'Cost':>10s}"
+        )
+        print(f"  {'-' * 12} {'-' * 8} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10}")
         for day, data in sorted(by_date.items()):
             print(
                 f"  {day:<12s} {data['sessions']:>8d} "
-                f"{_fmt_tokens(data['input_tokens']):>10s} "
-                f"{_fmt_tokens(data['output_tokens']):>10s} "
+                f"{_fmt_tokens(data.get('input_tokens', 0)):>10s} "
+                f"{_fmt_tokens(data.get('cache_read_tokens', 0)):>10s} "
+                f"{_fmt_tokens(data.get('cache_write_tokens', 0)):>10s} "
+                f"{_fmt_tokens(data.get('output_tokens', 0)):>10s} "
                 f"${data['cost_usd']:.4f}"
             )
         print()
@@ -127,11 +148,14 @@ def _show_anima_cost(name: str, anima_dir: Path, days: int, json_output: bool) -
 def _print_anima_summary(name: str, summary: dict) -> None:
     print(f"\n  {name}")
     print(f"  {'─' * 56}")
+    cache_r = summary.get("total_cache_read_tokens", 0)
+    cache_w = summary.get("total_cache_write_tokens", 0)
     print(
         f"  Sessions: {summary['total_sessions']:,d}   "
         f"Input: {_fmt_tokens(summary['total_input_tokens'])}   "
-        f"Output: {_fmt_tokens(summary['total_output_tokens'])}   "
-        f"Total: {_fmt_tokens(summary['total_tokens'])}"
+        f"CacheR: {_fmt_tokens(cache_r)}   "
+        f"CacheW: {_fmt_tokens(cache_w)}   "
+        f"Output: {_fmt_tokens(summary['total_output_tokens'])}"
     )
     print(f"  Estimated cost: ${summary['total_estimated_cost_usd']:.4f}")
 

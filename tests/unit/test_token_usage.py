@@ -96,9 +96,15 @@ class TestTokenUsageLoggerLog:
         assert len(lines) == 2
 
     def test_log_cache_tokens_optional(self, tul: TokenUsageLogger, logger_dir: Path):
-        tul.log(model="claude-opus-4-6", trigger="chat", mode="s",
-                input_tokens=1000, output_tokens=500,
-                cache_read_tokens=300, cache_write_tokens=100)
+        tul.log(
+            model="claude-opus-4-6",
+            trigger="chat",
+            mode="s",
+            input_tokens=1000,
+            output_tokens=500,
+            cache_read_tokens=300,
+            cache_write_tokens=100,
+        )
         files = list((logger_dir / "token_usage").glob("*.jsonl"))
         entry = json.loads(files[0].read_text().strip())
         assert entry["cache_read_tokens"] == 300
@@ -125,12 +131,7 @@ class TestEstimateCost:
             cache_read_tokens=200_000,
             cache_write_tokens=100_000,
         )
-        expected = (
-            1_000_000 * 15.0
-            + 500_000 * 75.0
-            + 200_000 * 1.50
-            + 100_000 * 18.75
-        ) / 1_000_000
+        expected = (1_000_000 * 5.0 + 500_000 * 25.0 + 200_000 * 0.50 + 100_000 * 6.25) / 1_000_000
         assert cost == pytest.approx(expected)
 
     def test_unknown_model_returns_zero(self, tul: TokenUsageLogger):
@@ -178,8 +179,7 @@ class TestCustomPricing:
         pricing_file.write_text(json.dumps(custom_pricing))
 
         with pytest.MonkeyPatch.context() as mp:
-            mp.setattr("core.memory.token_usage.TokenUsageLogger._load_pricing_table",
-                        lambda self: custom_pricing)
+            mp.setattr("core.memory.token_usage.TokenUsageLogger._load_pricing_table", lambda self: custom_pricing)
             tul = TokenUsageLogger(logger_dir)
             tul._pricing = custom_pricing
             cost = tul.estimate_cost("test-model", input_tokens=1_000_000, output_tokens=500_000)
@@ -195,12 +195,9 @@ class TestSummarize:
         assert summary["total_estimated_cost_usd"] == 0.0
 
     def test_summarize_aggregates(self, tul: TokenUsageLogger):
-        tul.log(model="claude-sonnet-4-6", trigger="chat", mode="a",
-                input_tokens=1000, output_tokens=500)
-        tul.log(model="claude-sonnet-4-6", trigger="heartbeat", mode="a",
-                input_tokens=2000, output_tokens=1000)
-        tul.log(model="claude-opus-4-6", trigger="chat", mode="s",
-                input_tokens=500, output_tokens=200)
+        tul.log(model="claude-sonnet-4-6", trigger="chat", mode="a", input_tokens=1000, output_tokens=500)
+        tul.log(model="claude-sonnet-4-6", trigger="heartbeat", mode="a", input_tokens=2000, output_tokens=1000)
+        tul.log(model="claude-opus-4-6", trigger="chat", mode="s", input_tokens=500, output_tokens=200)
 
         summary = tul.summarize(days=1)
         assert summary["total_sessions"] == 3
@@ -220,8 +217,7 @@ class TestSummarize:
         assert summary["by_trigger"]["heartbeat"]["sessions"] == 1
 
     def test_summarize_by_date(self, tul: TokenUsageLogger):
-        tul.log(model="claude-sonnet-4-6", trigger="chat", mode="a",
-                input_tokens=1000, output_tokens=500)
+        tul.log(model="claude-sonnet-4-6", trigger="chat", mode="a", input_tokens=1000, output_tokens=500)
 
         summary = tul.summarize(days=1)
         assert len(summary["by_date"]) == 1
@@ -229,8 +225,7 @@ class TestSummarize:
         assert summary["by_date"][day_key]["sessions"] == 1
 
     def test_read_entries(self, tul: TokenUsageLogger):
-        tul.log(model="claude-sonnet-4-6", trigger="chat", mode="a",
-                input_tokens=1000, output_tokens=500)
+        tul.log(model="claude-sonnet-4-6", trigger="chat", mode="a", input_tokens=1000, output_tokens=500)
         entries = tul.read_entries(days=1)
         assert len(entries) == 1
         assert entries[0]["model"] == "claude-sonnet-4-6"
@@ -242,6 +237,7 @@ class TestSummarize:
 class TestMergeStreamUsage:
     def test_merge(self):
         from core._agent_cycle import _merge_stream_usage
+
         acc = {"input_tokens": 100, "output_tokens": 50, "cache_read_tokens": 0, "cache_write_tokens": 0}
         _merge_stream_usage(acc, {"input_tokens": 200, "output_tokens": 100, "cache_read_tokens": 10})
         assert acc["input_tokens"] == 300
@@ -250,12 +246,14 @@ class TestMergeStreamUsage:
 
     def test_merge_none(self):
         from core._agent_cycle import _merge_stream_usage
+
         acc = {"input_tokens": 100, "output_tokens": 50, "cache_read_tokens": 0, "cache_write_tokens": 0}
         _merge_stream_usage(acc, None)
         assert acc["input_tokens"] == 100
 
     def test_merge_empty(self):
         from core._agent_cycle import _merge_stream_usage
+
         acc = {"input_tokens": 100, "output_tokens": 50, "cache_read_tokens": 0, "cache_write_tokens": 0}
         _merge_stream_usage(acc, {})
         assert acc["input_tokens"] == 100

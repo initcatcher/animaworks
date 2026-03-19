@@ -472,6 +472,14 @@ class AssistedExecutor(BaseExecutor):
             if hasattr(response, "usage") and response.usage:
                 usage_acc.input_tokens += response.usage.prompt_tokens or 0
                 usage_acc.output_tokens += response.usage.completion_tokens or 0
+                _cr_b = getattr(response.usage, "cache_read_input_tokens", 0) or 0
+                _cw_b = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
+                if not _cr_b:
+                    _ptd_b = getattr(response.usage, "prompt_tokens_details", None)
+                    if _ptd_b:
+                        _cr_b = getattr(_ptd_b, "cached_tokens", 0) or 0
+                usage_acc.cache_read_tokens += _cr_b
+                usage_acc.cache_write_tokens += _cw_b
 
             # P1-2: output truncation reminder
             if choice.finish_reason == "length":
@@ -699,6 +707,14 @@ class AssistedExecutor(BaseExecutor):
                 if hasattr(response, "usage") and response.usage:
                     _usage_acc_bs.input_tokens += response.usage.prompt_tokens or 0
                     _usage_acc_bs.output_tokens += response.usage.completion_tokens or 0
+                    _cr_bs = getattr(response.usage, "cache_read_input_tokens", 0) or 0
+                    _cw_bs = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
+                    if not _cr_bs:
+                        _ptd_bs = getattr(response.usage, "prompt_tokens_details", None)
+                        if _ptd_bs:
+                            _cr_bs = getattr(_ptd_bs, "cached_tokens", 0) or 0
+                    _usage_acc_bs.cache_read_tokens += _cr_bs
+                    _usage_acc_bs.cache_write_tokens += _cw_bs
 
                 # P1-2: output truncation reminder
                 if choice.finish_reason == "length":

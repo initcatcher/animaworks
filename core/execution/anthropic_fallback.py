@@ -344,6 +344,8 @@ class AnthropicFallbackExecutor(BaseExecutor):
             _out_af = getattr(response.usage, "output_tokens", 0) or 0
             usage_acc.input_tokens += _inp_af
             usage_acc.output_tokens += _out_af
+            usage_acc.cache_read_tokens += getattr(response.usage, "cache_read_input_tokens", 0) or 0
+            usage_acc.cache_write_tokens += getattr(response.usage, "cache_creation_input_tokens", 0) or 0
             if tracker:
                 usage_dict = {"input_tokens": _inp_af, "output_tokens": _out_af}
                 tracker.update_from_usage(usage_dict)
@@ -637,6 +639,10 @@ class AnthropicFallbackExecutor(BaseExecutor):
                     _out_s = getattr(final_message.usage, "output_tokens", 0) or 0
                     _usage_acc_s.input_tokens += _inp_s
                     _usage_acc_s.output_tokens += _out_s
+                    _usage_acc_s.cache_read_tokens += getattr(final_message.usage, "cache_read_input_tokens", 0) or 0
+                    _usage_acc_s.cache_write_tokens += (
+                        getattr(final_message.usage, "cache_creation_input_tokens", 0) or 0
+                    )
                 if tracker and final_message:
                     usage_dict = {"input_tokens": _inp_s, "output_tokens": _out_s}
                     tracker.update_from_usage(usage_dict)
