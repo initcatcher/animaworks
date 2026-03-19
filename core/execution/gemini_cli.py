@@ -115,32 +115,73 @@ class GeminiCLIExecutor(BaseExecutor):
     # ── Helpers ─────────────────────────────────────────────────
 
     def _ensure_workspace(self) -> None:
-        """Create workspace and .gemini directories."""
+        """Create workspace and .gemini directories.
+
+        Copies auth credential files from the default ``~/.gemini``
+        directory so that CLI-delegated OAuth login works even when
+        ``GEMINI_CLI_HOME`` points to a per-Anima workspace.
+        """
+        gemini_dir = self._workspace / ".gemini"
         self._workspace.mkdir(parents=True, exist_ok=True)
-        (self._workspace / ".gemini").mkdir(parents=True, exist_ok=True)
+        gemini_dir.mkdir(parents=True, exist_ok=True)
+
+        default_home = Path.home() / ".gemini"
+        if default_home.is_dir():
+            for name in (
+                "oauth_creds.json",
+                "google_accounts.json",
+                "installation_id",
+                "state.json",
+            ):
+                src = default_home / name
+                dst = gemini_dir / name
+                if src.is_file() and not dst.exists():
+                    try:
+                        import shutil as _shutil
+
+                        _shutil.copy2(src, dst)
+                    except OSError:
+                        pass
 
     def _write_settings(self) -> None:
-        """Write .gemini/settings.json with MCP server and approval mode."""
+        """Write .gemini/settings.json merging MCP config with existing auth."""
         import sys
 
         from core.paths import PROJECT_DIR
 
         settings_path = self._workspace / ".gemini" / "settings.json"
-        config = {
-            "mcpServers": {
-                "aw": {
-                    "command": sys.executable,
-                    "args": ["-m", "core.mcp.server"],
-                    "env": {
-                        "ANIMAWORKS_ANIMA_DIR": str(self._anima_dir),
-                        "ANIMAWORKS_PROJECT_DIR": str(PROJECT_DIR),
-                        "PYTHONPATH": str(PROJECT_DIR),
-                        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
-                    },
-                }
-            },
+
+        existing: dict = {}
+        if settings_path.is_file():
+            try:
+                existing = json.loads(settings_path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                pass
+
+        if not existing.get("security", {}).get("auth"):
+            default_settings = Path.home() / ".gemini" / "settings.json"
+            if default_settings.is_file():
+                try:
+                    default = json.loads(default_settings.read_text(encoding="utf-8"))
+                    if "security" in default:
+                        existing.setdefault("security", {}).update(default["security"])
+                except (json.JSONDecodeError, OSError):
+                    pass
+
+        existing["mcpServers"] = {
+            "aw": {
+                "command": sys.executable,
+                "args": ["-m", "core.mcp.server"],
+                "env": {
+                    "ANIMAWORKS_ANIMA_DIR": str(self._anima_dir),
+                    "ANIMAWORKS_PROJECT_DIR": str(PROJECT_DIR),
+                    "PYTHONPATH": str(PROJECT_DIR),
+                    "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+                },
+            }
         }
-        settings_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+        settings_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
 
     def _write_system_prompt(self, system_prompt: str) -> Path:
         """Write system prompt to a temporary file and return the path."""
