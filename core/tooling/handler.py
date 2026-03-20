@@ -527,7 +527,7 @@ class ToolHandler(
             self._activity.log(
                 "tool_result",
                 tool=name,
-                content=result,
+                content=result[:20_000] if len(result) > 20_000 else result,
                 meta=meta,
             )
         except Exception as e:
