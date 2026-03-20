@@ -208,6 +208,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "ja": "OpenAI APIキー",
         "en": "OpenAI API key",
     },
+    "config.openai_auth": {
+        "ja": "OpenAI APIキー / Codex Login",
+        "en": "OpenAI API key / Codex login",
+    },
     "config.shared_dir": {
         "ja": "共有ディレクトリ",
         "en": "Shared directory",
