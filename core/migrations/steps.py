@@ -696,6 +696,37 @@ def step_v056_heartbeat_quality_resync(data_dir: Path, dry_run: bool, verbose: b
     return StepResult(changed=total, skipped=0, details=details)
 
 
+def step_task_delegation_to_common_knowledge(data_dir: Path, dry_run: bool, verbose: bool) -> StepResult:
+    """Move task_delegation_rules from prompts/ to common_knowledge/operations/.
+
+    Resyncs common_knowledge (deploys task-delegation-guide.md), prompts
+    (deploys updated heartbeat.md/inbox_message.md without the old
+    placeholder), and removes the stale prompts/task_delegation_rules.md
+    from the runtime directory.
+    """
+    details: list[str] = []
+    total = 0
+
+    r1 = step_common_knowledge_resync(data_dir, dry_run, verbose)
+    total += r1.changed
+    details.extend(r1.details)
+
+    r2 = step_prompt_resync(data_dir, dry_run, verbose)
+    total += r2.changed
+    details.extend(r2.details)
+
+    stale = data_dir / "prompts" / "task_delegation_rules.md"
+    if stale.is_file():
+        if dry_run:
+            details.append("Would remove stale prompts/task_delegation_rules.md")
+        else:
+            stale.unlink()
+            details.append("Removed stale prompts/task_delegation_rules.md")
+        total += 1
+
+    return StepResult(changed=total, skipped=0, details=details)
+
+
 # ── Category 5: Version tracking ────────────────────────────────
 
 
@@ -752,6 +783,12 @@ def register_all_steps(runner: Any) -> None:
             "v0.5.6: Resync prompts (heartbeat quality)",
             "template_sync",
             step_v056_heartbeat_quality_resync,
+        ),
+        MigrationStep(
+            "task_delegation_to_common_knowledge",
+            "Move task_delegation_rules to common_knowledge",
+            "template_sync",
+            step_task_delegation_to_common_knowledge,
         ),
         MigrationStep("update_version", "Update migration_state.json", "version", step_update_version),
     ]
