@@ -577,8 +577,8 @@ def create_assets_router() -> APIRouter:
     async def upload_fullbody_asset(
         name: str,
         request: Request,
-        file: UploadFile = File(...),
-        image_style: str = Form("anime"),
+        file: UploadFile = File(...),  # noqa: B008
+        image_style: str = Form("anime"),  # noqa: B008
     ):
         """Upload a PNG/JPEG to overwrite the anima's full-body reference image."""
         animas_dir = request.app.state.animas_dir

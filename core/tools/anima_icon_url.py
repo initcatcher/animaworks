@@ -64,6 +64,7 @@ ANIMA_ICON_ASSET_FILENAME = "icon.png"
 ANIMA_ICON_ASSET_FILENAME_REALISTIC = "icon_realistic.png"
 
 ICON_URL_TEMPLATE_CONFIG_KEY = "icon_url_template"
+ICON_PATH_TEMPLATE_CONFIG_KEY = "icon_path_template"
 
 DEFAULT_INTERNAL_ICON_PATH_TEMPLATE = "/api/animas/{name}/assets/icon.png"
 DEFAULT_INTERNAL_ICON_PATH_TEMPLATE_REALISTIC = "/api/animas/{name}/assets/icon_realistic.png"
@@ -77,7 +78,11 @@ def template_is_external_icon_url(template: str) -> bool:
 
 
 def _icon_path_template_from_mapping(channel_config: dict[str, Any]) -> str:
-    raw = channel_config.get(ICON_URL_TEMPLATE_CONFIG_KEY) or ""
+    raw = (
+        channel_config.get(ICON_PATH_TEMPLATE_CONFIG_KEY)
+        or channel_config.get(ICON_URL_TEMPLATE_CONFIG_KEY)
+        or ""
+    )
     return str(raw).strip()
 
 
@@ -94,13 +99,19 @@ def _icon_asset_for_url(anima_name: str) -> tuple[Path, str] | None:
         style = "anime"
 
     if style == "realistic":
-        path = assets / ANIMA_ICON_ASSET_FILENAME_REALISTIC
-        if path.is_file():
-            return (path, ANIMA_ICON_ASSET_FILENAME_REALISTIC)
+        for path, filename in (
+            (assets / ANIMA_ICON_ASSET_FILENAME_REALISTIC, ANIMA_ICON_ASSET_FILENAME_REALISTIC),
+            (assets / ANIMA_ICON_ASSET_FILENAME, ANIMA_ICON_ASSET_FILENAME),
+        ):
+            if path.is_file():
+                return (path, filename)
     else:
-        path = assets / ANIMA_ICON_ASSET_FILENAME
-        if path.is_file():
-            return (path, ANIMA_ICON_ASSET_FILENAME)
+        for path, filename in (
+            (assets / ANIMA_ICON_ASSET_FILENAME, ANIMA_ICON_ASSET_FILENAME),
+            (assets / ANIMA_ICON_ASSET_FILENAME_REALISTIC, ANIMA_ICON_ASSET_FILENAME_REALISTIC),
+        ):
+            if path.is_file():
+                return (path, filename)
     return None
 
 
@@ -154,9 +165,12 @@ def resolve_anima_icon_url(
             path_resolved = "/" + path_resolved
         return base.rstrip("/") + path_resolved
 
-    (path, filename) = _icon_asset_for_url(anima_name)
-    if not base or not path:
+    if not base:
         return ""
+    asset = _icon_asset_for_url(anima_name)
+    if asset is None:
+        return ""
+    _, filename = asset
     return f"{base.rstrip('/')}/api/animas/{quote(anima_name, safe='')}/assets/{filename}"
 
 
