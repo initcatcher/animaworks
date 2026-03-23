@@ -170,7 +170,7 @@ class TestFluxKontextClient:
 
 
 class TestDispatchGenerateIcon:
-    @patch("core.tools.anima_icon_url.persist_anima_icon_path_template")
+    @patch("core.tools._anima_icon_url.persist_anima_icon_path_template")
     @patch("core.tools.image_gen.FluxKontextClient")
     @patch("core.config.models.load_config")
     def test_writes_icon_png_with_square_aspect_ratio(
@@ -203,7 +203,7 @@ class TestDispatchGenerateIcon:
         kw = mock_flux_cls.return_value.generate_from_reference.call_args[1]
         assert kw["aspect_ratio"] == "1:1"
 
-    @patch("core.tools.anima_icon_url.persist_anima_icon_path_template")
+    @patch("core.tools._anima_icon_url.persist_anima_icon_path_template")
     @patch("core.tools.image_gen.FluxKontextClient")
     @patch("core.config.models.load_config")
     def test_writes_icon_realistic_png_when_realistic_style(
@@ -494,7 +494,7 @@ class TestImageGenPipeline:
             assert call_kwargs["vibe_strength"] == 0.3
             assert call_kwargs["vibe_info_extracted"] == 0.5
 
-    @patch("core.tools.anima_icon_url.persist_anima_icon_path_template")
+    @patch("core.tools._anima_icon_url.persist_anima_icon_path_template")
     def test_generate_all_icon_step_uses_square_aspect_ratio(
         self,
         _mock_persist: MagicMock,

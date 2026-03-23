@@ -1,4 +1,4 @@
-"""Tests for core/tools/anima_icon_url.py."""
+"""Tests for core/tools/_anima_icon_url.py."""
 # AnimaWorks - Digital Anima Framework
 # Copyright (C) 2026 AnimaWorks Authors
 # SPDX-License-Identifier: Apache-2.0
@@ -14,7 +14,7 @@ from core.config.models import (
     HumanNotificationConfig,
     NotificationChannelConfig,
 )
-from core.tools.anima_icon_url import (
+from core.tools._anima_icon_url import (
     DEFAULT_INTERNAL_ICON_PATH_TEMPLATE,
     resolve_anima_icon_identity,
     resolve_anima_icon_url,

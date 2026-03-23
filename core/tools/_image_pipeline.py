@@ -433,7 +433,7 @@ class ImageGenPipeline:
                     result.icon_path = icon_file
                     logger.info("Step 3 complete: %s", icon_file)
                     try:
-                        from core.tools.anima_icon_url import persist_anima_icon_path_template
+                        from core.tools._anima_icon_url import persist_anima_icon_path_template
 
                         persist_anima_icon_path_template()
                     except Exception:

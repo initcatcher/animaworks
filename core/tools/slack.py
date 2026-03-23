@@ -81,9 +81,9 @@ def _resolve_slack_token(args: dict[str, Any]) -> str | None:
 def _resolve_slack_identity(args: dict[str, Any]) -> tuple[str, str]:
     """Resolve Anima display name and icon URL for Slack messages.
 
-    See :func:`core.tools.anima_icon_url.resolve_anima_icon_identity`.
+    See :func:`core.tools._anima_icon_url.resolve_anima_icon_identity`.
     """
-    from core.tools.anima_icon_url import resolve_anima_icon_identity
+    from core.tools._anima_icon_url import resolve_anima_icon_identity
 
     anima_dir = args.get("anima_dir")
     if not anima_dir:

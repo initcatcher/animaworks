@@ -100,7 +100,7 @@ class SlackChannel(NotificationChannel):
             payload["username"] = anima_name
             icon_url = ""
             try:
-                from core.tools.anima_icon_url import resolve_anima_icon_url
+                from core.tools._anima_icon_url import resolve_anima_icon_url
 
                 icon_url = resolve_anima_icon_url(
                     anima_name,

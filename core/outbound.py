@@ -233,11 +233,11 @@ def _build_channel_order(resolved: ResolvedRecipient) -> list[str]:
 
 
 def _resolve_outbound_icon(anima_name: str) -> str:
-    """Resolve icon_url for outbound Slack messages (see :mod:`core.tools.anima_icon_url`)."""
+    """Resolve icon_url for outbound Slack messages (see :mod:`core.tools._anima_icon_url`)."""
     if not anima_name:
         return ""
     try:
-        from core.tools.anima_icon_url import resolve_anima_icon_url
+        from core.tools._anima_icon_url import resolve_anima_icon_url
 
         return resolve_anima_icon_url(anima_name, channel_config=None)
     except Exception:

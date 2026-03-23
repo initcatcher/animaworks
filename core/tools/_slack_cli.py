@@ -83,7 +83,7 @@ def _resolve_slack_identity(args: dict) -> tuple[str, str]:
     if not anima_dir:
         return ("", "")
 
-    from core.tools.anima_icon_url import resolve_anima_icon_identity
+    from core.tools._anima_icon_url import resolve_anima_icon_identity
 
     return resolve_anima_icon_identity(Path(anima_dir).name, channel_config=None)
 

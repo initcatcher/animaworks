@@ -6,6 +6,8 @@
 
 """Anima icon URL resolution — dashboard, outbound, Slack, notifications, tools, etc.
 
+Private helper module (``_`` prefix): not registered in :data:`~core.tools.TOOL_MODULES`.
+
 Each Slack (human notification) channel may set ``icon_path_template`` on its ``config`` object.
 
 **Template kind (by prefix):**

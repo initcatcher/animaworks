@@ -257,7 +257,7 @@ def dispatch(tool_name: str, args: dict[str, Any]) -> Any:
         out = assets_dir / out_name
         out.write_bytes(img)
         try:
-            from core.tools.anima_icon_url import persist_anima_icon_path_template
+            from core.tools._anima_icon_url import persist_anima_icon_path_template
 
             persist_anima_icon_path_template()
         except Exception:

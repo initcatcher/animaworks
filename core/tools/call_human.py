@@ -74,7 +74,7 @@ def _resolve_cli_anima_identity(channel_cfg: dict) -> tuple[str, str]:
     """
     import os
 
-    from core.tools.anima_icon_url import resolve_anima_icon_identity
+    from core.tools._anima_icon_url import resolve_anima_icon_identity
 
     anima_dir = os.environ.get("ANIMAWORKS_ANIMA_DIR")
     if not anima_dir:
