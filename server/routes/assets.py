@@ -589,7 +589,10 @@ def create_assets_router() -> APIRouter:
         assets_dir = anima_dir / "assets"
         assets_dir.mkdir(parents=True, exist_ok=True)
 
-        raw = await file.read()
+        _MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
+        raw = await file.read(_MAX_UPLOAD_BYTES + 1)
+        if len(raw) > _MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="File too large (max 20 MB)")
         if len(raw) < 8:
             raise HTTPException(status_code=400, detail="Empty or invalid image file")
 
@@ -806,11 +809,14 @@ def create_assets_router() -> APIRouter:
 
         # Copy selected preview file to the canonical fullbody path
         if body.preview_file:
-            preview_path = assets_dir / body.preview_file
+            safe_preview = Path(body.preview_file).name
+            if safe_preview != body.preview_file or ".." in body.preview_file:
+                raise HTTPException(status_code=400, detail="Invalid preview filename")
+            preview_path = assets_dir / safe_preview
             if not preview_path.exists():
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Preview file not found: {body.preview_file}",
+                    detail=f"Preview file not found: {safe_preview}",
                 )
             _sh.copy2(preview_path, assets_dir / fullbody_filename)
 

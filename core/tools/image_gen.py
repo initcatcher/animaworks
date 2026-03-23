@@ -10,14 +10,14 @@
 Facade module — re-exports all public symbols from sub-modules and
 provides the :func:`dispatch` entry point used by the tool handler.
 
-Pipeline:
+Pipeline (7 steps):
   1. NovelAI V4.5 → anime full-body image (fallback: fal.ai Flux Pro)
   2. Flux Kontext [pro] (fal.ai) → bust-up from reference
-  2b. Flux Kontext [pro] (fal.ai) → icon from neutral bustup
-  3. Flux Kontext [pro] (fal.ai) → chibi from reference
-  4. Meshy Image-to-3D → GLB model from chibi image
-  5. Meshy Rigging → rigged GLB + walking/running animations
-  6. Meshy Animations → idle/sitting/waving/talking GLBs
+  3. Flux Kontext [pro] (fal.ai) → icon from neutral bustup
+  4. Flux Kontext [pro] (fal.ai) → chibi from reference
+  5. Meshy Image-to-3D → GLB model from chibi image
+  6. Meshy Rigging → rigged GLB + walking/running animations
+  7. Meshy Animations → idle/sitting/waving/talking GLBs
 """
 
 from __future__ import annotations

@@ -92,8 +92,8 @@ class SlackChannel(NotificationChannel):
         if not channel:
             return "slack: ERROR - channel not configured for bot token mode"
 
-        # When username override is active, omit "(from X)" from text body
-        text = self._build_text(subject, body, priority, "" if anima_name else "")
+        # When username override is active, omit "(from X)" — username is visible as sender
+        text = self._build_text(subject, body, priority, "")
 
         payload: dict[str, Any] = {"channel": channel, "text": text}
         if anima_name:

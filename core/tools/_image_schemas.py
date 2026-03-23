@@ -28,7 +28,7 @@ def get_cli_guide() -> str:
 Aモードのツール名: `generate_character_assets` / `generate_fullbody` / `generate_bustup` 等
 
 ```bash
-# 全6ステップ一括生成（推奨）
+# 全7ステップ一括生成（推奨）
 animaworks-tool image_gen pipeline "1girl, black hair, ..." --negative "lowres, bad anatomy, ..." --anima-dir <anima_dir> -j
 
 # 個別ステップ

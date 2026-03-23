@@ -44,7 +44,7 @@ def cli_main(argv: list[str] | None = None) -> None:
     sub = parser.add_subparsers(dest="command", required=True)
 
     # -- pipeline --
-    p_pipe = sub.add_parser("pipeline", help="Run full 6-step pipeline")
+    p_pipe = sub.add_parser("pipeline", help="Run full 7-step pipeline")
     p_pipe.add_argument("prompt", help="Character appearance tags")
     p_pipe.add_argument("-n", "--negative", default="", help="Negative prompt")
     p_pipe.add_argument(

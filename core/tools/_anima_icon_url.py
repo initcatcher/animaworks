@@ -39,13 +39,14 @@ path (``icon.png`` or ``icon_realistic.png`` under ``assets/``, matching image s
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-from core.tools._base import logger
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "ANIMA_ICON_ASSET_FILENAME",
