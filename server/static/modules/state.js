@@ -65,6 +65,12 @@ export function escapeHtml(str) {
   return div.innerHTML;
 }
 
+export function escapeAttr(str) {
+  if (!str) return "";
+  return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 export function statusClass(status) {
   if (!status) return "status-offline";
   const s = status.toLowerCase();
@@ -113,12 +119,12 @@ _markedRenderer.code = function (token) {
   const content = token.text || "";
   if (content.length > 100 * 1024) {
     const id = window.__registerArtifactContent?.(content) || "";
-    return `<div class="text-artifact-card" data-filename="${escapeHtml(filename)}" data-content-id="${escapeHtml(id)}">` +
+    return `<div class="text-artifact-card" data-filename="${escapeAttr(filename)}" data-content-id="${escapeAttr(id)}">` +
       `<span class="text-artifact-icon">\uD83D\uDCC4</span>` +
       `<span class="text-artifact-name">${escapeHtml(filename)}</span>` +
       `</div>`;
   }
-  return `<div class="text-artifact-card" data-filename="${escapeHtml(filename)}" data-content="${escapeHtml(content)}">` +
+  return `<div class="text-artifact-card" data-filename="${escapeAttr(filename)}" data-content="${escapeAttr(content)}">` +
     `<span class="text-artifact-icon">\uD83D\uDCC4</span>` +
     `<span class="text-artifact-name">${escapeHtml(filename)}</span>` +
     `</div>`;
