@@ -132,10 +132,24 @@ _markedRenderer.code = function (token) {
 
 const _markedOptions = { breaks: true, renderer: _markedRenderer };
 
+// ── Foster-parenting prevention ──────────────────
+// An unclosed <table> in the HTML string makes the HTML5 parser enter
+// "in table" mode where non-table end tags (</div>) are ignored.
+// This causes subsequent chat-msg-row elements to nest inside the
+// previous bubble.  Round-tripping through a detached element forces
+// the browser to auto-close every tag, producing well-formed HTML.
+const _sanitizerEl = document.createElement("div");
+
+function _ensureClosedTags(html) {
+  if (!html || !html.includes("<table")) return html;
+  _sanitizerEl.innerHTML = html;
+  return _sanitizerEl.innerHTML;
+}
+
 export function renderMarkdown(text, animaName) {
   _mdAnimaCtx = animaName || null;
   try {
-    return marked.parse(text, _markedOptions);
+    return _ensureClosedTags(marked.parse(text, _markedOptions));
   } catch {
     return escapeHtml(text);
   } finally {
@@ -146,7 +160,7 @@ export function renderMarkdown(text, animaName) {
 export function renderSafeMarkdown(text) {
   if (!text) return "";
   try {
-    return marked.parse(escapeHtml(text), _markedOptions);
+    return _ensureClosedTags(marked.parse(escapeHtml(text), _markedOptions));
   } catch {
     return escapeHtml(text);
   }
