@@ -558,8 +558,6 @@ class TaskQueueManager:
                     "done",
                     summary=t("task_queue.sync_done", orig=task.summary, target=target),
                 )
-                task.meta["auto_synced"] = True
-                task.meta["resolved_by"] = target
                 synced += 1
             elif sub_status == "failed":
                 self.update_status(
@@ -567,8 +565,6 @@ class TaskQueueManager:
                     "failed",
                     summary=t("task_queue.sync_failed", orig=task.summary, target=target),
                 )
-                task.meta["auto_synced"] = True
-                task.meta["resolved_by"] = target
                 synced += 1
         return synced
 
@@ -615,21 +611,14 @@ class TaskQueueManager:
         lines: list[str] = []
         total = 0
         _status_icons = {"done": "✅", "failed": "❌", "cancelled": "🚫"}
+        unknown_label = t("task_queue.delegated_unknown")
         for task in delegated[:5]:
             meta = task.meta or {}
-            target = meta.get("delegated_to", "unknown")
+            target = meta.get("delegated_to", unknown_label)
             child_id = meta.get("delegated_task_id", "")
             sub_status = "?"
-            if child_id and target != "unknown":
-                target_dir = animas_dir / target
-                if target_dir.is_dir():
-                    resolved = self._resolve_subordinate_status(target_dir, child_id)
-                    if resolved:
-                        sub_status = resolved
-                    else:
-                        sub_tqm = TaskQueueManager(target_dir)
-                        sub_task = sub_tqm.get_task_by_id(child_id)
-                        sub_status = sub_task.status if sub_task else "archived"
+            if child_id and target != unknown_label:
+                sub_status = self._resolve_subordinate_display(animas_dir / target, child_id)
             icon = _status_icons.get(sub_status, "⏳")
             elapsed_sec = _elapsed_seconds(task.updated_at, now)
             elapsed_str = _format_elapsed_from_sec(elapsed_sec) or ""
@@ -639,6 +628,20 @@ class TaskQueueManager:
             lines.append(line)
             total += len(line) + 1
         return "\n".join(lines)
+
+    def _resolve_subordinate_display(self, target_dir: Path, child_id: str) -> str:
+        """Resolve subordinate task status for display (single queue read)."""
+        if not target_dir.is_dir():
+            return "?"
+        try:
+            sub_tqm = TaskQueueManager(target_dir)
+            sub_task = sub_tqm.get_task_by_id(child_id)
+            if sub_task:
+                return sub_task.status
+            archived = self._search_archive(target_dir, child_id)
+            return archived if archived else t("task_queue.delegated_archived")
+        except Exception:
+            return "?"
 
     # ── Maintenance ────────────────────────────────────────────
 

@@ -508,6 +508,14 @@ STRINGS: dict[str, dict[str, str]] = {
         "ja": "{orig} (→{target}: 失敗 — 再委任を検討)",
         "en": "{orig} (→{target}: failed — consider re-delegation)",
     },
+    "task_queue.delegated_unknown": {
+        "ja": "不明",
+        "en": "unknown",
+    },
+    "task_queue.delegated_archived": {
+        "ja": "アーカイブ済",
+        "en": "archived",
+    },
     "voice.mode_suffix": {
         "ja": (
             "\n\n[voice-mode: 音声会話です。話し言葉で200文字以内で簡潔に回答してください。Markdown記法（見出し・太字・リスト・コードブロック等）は使わないでください]"
