@@ -7,8 +7,26 @@ adhering to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-03-30
+
 ### Added
 - `search_memory` に `activity_log` スコープを追加 — 直近3日間の行動ログをBM25キーワード検索可能に。`scope="all"` 使用時はベクトル検索結果とRRF（Reciprocal Rank Fusion）で統合
+- `search_memory` に `skills` スコープを追加 — スキル・共通スキルをベクトル検索可能に
+- `completion_gate` ツールを全実行モード（S/A/B/C/D/G）に追加 — 最終回答前の完了チェックリスト検証
+- 2-phase multipass consolidation — tool_result全文を活用した高精度エピソード抽出 + エラートレース分析
+- 委譲タスクのPriming表示 + 部下からの自動同期
+
+### Changed
+- `skill` ツールを廃止し `read_memory_file` に統合 — スキルカタログはシステムプロンプトに直接表示、`read_memory_file(path="common_skills/.../SKILL.md")` で全文取得
+- Priming Channel D（スキルマッチ）を削除 — スキル情報はシステムプロンプト内カタログに移行
+- `common_skills/` 全スキル説明を Use-when パターンに移行
+- `read_memory_file` に `common_skills/` パス解決を追加
+
+### Fixed
+- ローカル `file://` 画像パスの解決を修正
+
+### Migration
+- `v062_skill_removal_and_activity_log`: テンプレート全同期（common_knowledge, prompts, reference, common_skills）+ DB tool_descriptions/guides再同期 + 旧 `skill` ツール記述削除
 
 ## [0.6.1] - 2026-03-21
 
